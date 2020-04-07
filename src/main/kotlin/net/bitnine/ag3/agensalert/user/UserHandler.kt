@@ -1,14 +1,22 @@
 package net.bitnine.ag3.agensalert.user
 
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.slf4j.LoggerFactory
+import org.springframework.http.MediaType
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.*
+import reactor.core.publisher.Mono
 
 @Component
 class UserHandler(val service: UserService) {
     private val logger = LoggerFactory.getLogger(UserHandler::class.java)
+
+    suspend fun hello(request: ServerRequest): ServerResponse {
+        return ServerResponse.ok().json().bodyAndAwait(flowOf("Hello, Spring!"))    //mapOf("msg" to "Hello, Spring!")))
+    }
 
     suspend fun findAll(request: ServerRequest): ServerResponse {
         val users = service.findAll()

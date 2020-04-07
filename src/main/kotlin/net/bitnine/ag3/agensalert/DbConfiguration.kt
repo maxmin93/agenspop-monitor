@@ -18,6 +18,7 @@ class DbConfiguration {
 
         val initDb = db.execute {
             """
+                DROP TABLE if exists employee;
                 CREATE TABLE employee (
                     id SERIAL PRIMARY KEY,
                     first_name VARCHAR(255) NOT NULL,
