@@ -1,7 +1,7 @@
 package net.bitnine.ag3.agensalert
 
-import net.bitnine.ag3.agensalert.user.User
-import net.bitnine.ag3.agensalert.user.UserDTO
+import net.bitnine.ag3.agensalert.model.user.User
+import net.bitnine.ag3.agensalert.model.user.UserDTO
 
 // extensions
 

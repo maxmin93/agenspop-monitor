@@ -1,15 +1,12 @@
-package net.bitnine.ag3.agensalert
+package net.bitnine.ag3.agensalert.config
 
-import net.bitnine.ag3.agensalert.user.UserHandler
+import net.bitnine.ag3.agensalert.model.user.UserHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.reactive.CorsWebFilter
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
-import org.springframework.web.reactive.config.CorsRegistry
-import org.springframework.web.reactive.config.EnableWebFlux
-import org.springframework.web.reactive.config.WebFluxConfigurer
 import org.springframework.web.reactive.function.server.coRouter
 
 

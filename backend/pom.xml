@@ -5,7 +5,7 @@
 
     <groupId>net.bitnine.ag3</groupId>
     <artifactId>agensalert-backend</artifactId>
-    <version>${project.parent.version}</version>
+    <version>0.7</version>
     <name>agensalert-backend</name>
     <description>Graph alert service with query for AgensGraph v3</description>
 

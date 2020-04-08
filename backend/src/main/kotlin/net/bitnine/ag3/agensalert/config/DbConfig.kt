@@ -1,7 +1,7 @@
-package net.bitnine.ag3.agensalert
+package net.bitnine.ag3.agensalert.config
 
-import net.bitnine.ag3.agensalert.employee.EmployeeRepository
-import net.bitnine.ag3.agensalert.employee.Employee
+import net.bitnine.ag3.agensalert.model.employee.EmployeeRepository
+import net.bitnine.ag3.agensalert.model.employee.Employee
 
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.Bean
@@ -11,7 +11,7 @@ import reactor.core.publisher.Flux
 import java.util.stream.Stream
 
 @Component
-class DbConfiguration {
+class DbConfig {
 
     @Bean
     fun runner(employeeRepository: EmployeeRepository, db: DatabaseClient) = ApplicationRunner {

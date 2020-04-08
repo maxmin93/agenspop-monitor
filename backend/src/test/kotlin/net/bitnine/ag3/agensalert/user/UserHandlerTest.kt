@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import net.bitnine.ag3.agensalert.createUser
+import net.bitnine.ag3.agensalert.model.user.*
 import net.bitnine.ag3.agensalert.toDto
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

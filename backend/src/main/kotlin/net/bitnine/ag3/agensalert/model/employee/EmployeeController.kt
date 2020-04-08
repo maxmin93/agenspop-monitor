@@ -1,4 +1,4 @@
-package net.bitnine.ag3.agensalert.employee
+package net.bitnine.ag3.agensalert.model.employee
 
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*

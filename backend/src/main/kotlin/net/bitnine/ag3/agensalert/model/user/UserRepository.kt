@@ -1,5 +1,6 @@
-package net.bitnine.ag3.agensalert.user
+package net.bitnine.ag3.agensalert.model.user
 
+import net.bitnine.ag3.agensalert.model.user.User
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.repository.reactive.ReactiveCrudRepository
 import reactor.core.publisher.Flux

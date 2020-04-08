@@ -1,4 +1,4 @@
-package net.bitnine.ag3.agensalert.employee
+package net.bitnine.ag3.agensalert.model.employee
 
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.repository.reactive.ReactiveCrudRepository

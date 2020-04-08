@@ -1,7 +1,11 @@
-package net.bitnine.ag3.agensalert.user
+package net.bitnine.ag3.agensalert.model.user
 
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import net.bitnine.ag3.agensalert.model.user.User
+import net.bitnine.ag3.agensalert.model.user.UserDTO
+import net.bitnine.ag3.agensalert.model.user.UserRepository
+import net.bitnine.ag3.agensalert.model.user.toModel
 import org.springframework.stereotype.Service
 
 @Service

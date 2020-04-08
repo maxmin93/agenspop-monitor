@@ -5,7 +5,7 @@
 
     <groupId>net.bitnine.ag3</groupId>
     <artifactId>agensalert-frontend</artifactId>
-    <version>${project.parent.version}</version>
+    <version>0.7</version>
 
     <name>agensalert-frontend</name>
     <description>Frontend of AgensAlert</description>

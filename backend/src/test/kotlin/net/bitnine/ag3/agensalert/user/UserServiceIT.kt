@@ -5,6 +5,10 @@ import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
+import net.bitnine.ag3.agensalert.model.user.User
+import net.bitnine.ag3.agensalert.model.user.UserDTO
+import net.bitnine.ag3.agensalert.model.user.UserRepository
+import net.bitnine.ag3.agensalert.model.user.UserService
 import net.bitnine.ag3.agensalert.toDto
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*

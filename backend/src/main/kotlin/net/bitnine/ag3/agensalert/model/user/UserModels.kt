@@ -1,4 +1,4 @@
-package net.bitnine.ag3.agensalert.user
+package net.bitnine.ag3.agensalert.model.user
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
