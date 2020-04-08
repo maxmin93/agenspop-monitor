@@ -43,3 +43,4 @@ fun corsFilter(): CorsWebFilter {
     }
     return CorsWebFilter(source)
 }
+

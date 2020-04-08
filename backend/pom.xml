@@ -27,7 +27,6 @@
         <bom-r2dbc.version>0.1.0.M3</bom-r2dbc.version>
         <r2dbc-h2.version>0.8.2.RELEASE</r2dbc-h2.version>
         <h2.version>1.4.200</h2.version>
-        <mockk.version>1.9.3</mockk.version>
     </properties>
 
     <repositories>
@@ -51,22 +50,21 @@
     </dependencyManagement>
 
     <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot.experimental</groupId>
-            <artifactId>spring-boot-actuator-autoconfigure-r2dbc</artifactId>
-        </dependency>
+        <!-- for spring-boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot.experimental</groupId>
-            <artifactId>spring-boot-starter-data-r2dbc</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!-- for kotlin -->
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-kotlin</artifactId>
@@ -89,6 +87,16 @@
             <artifactId>reactor-kotlin-extensions</artifactId>
             <version>${reactor-ext.version}</version>
         </dependency>
+
+        <!-- for r2dbc and h2 -->
+        <dependency>
+            <groupId>org.springframework.boot.experimental</groupId>
+            <artifactId>spring-boot-actuator-autoconfigure-r2dbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot.experimental</groupId>
+            <artifactId>spring-boot-starter-data-r2dbc</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -100,7 +108,7 @@
             <version>${r2dbc-h2.version}</version>
         </dependency>
 
-        <!-- test -->
+        <!-- for test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -126,11 +134,11 @@
         <dependency>
             <groupId>io.mockk</groupId>
             <artifactId>mockk</artifactId>
-            <version>${mockk.version}</version>
+            <version>1.9.3</version>
             <scope>test</scope>
         </dependency>
 
-        <!--Angular Frontend module-->
+        <!-- for Frontend module -->
         <dependency>
             <groupId>net.bitnine.ag3</groupId>
             <artifactId>agensalert-frontend</artifactId>
@@ -154,8 +162,9 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <configuration>
+                    <nowarn>true</nowarn>           <!-- Disable warnings -->
                     <args>
-                        <arg>-Xjsr305=strict</arg>
+                        <arg>-Xjsr305=strict</arg>  <!-- Compile strict mode -->
                     </args>
                     <compilerPlugins>
                         <plugin>spring</plugin>

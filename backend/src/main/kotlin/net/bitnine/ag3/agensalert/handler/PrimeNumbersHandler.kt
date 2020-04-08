@@ -20,8 +20,10 @@ class PrimeNumbersHandler : WebSocketHandler {
 
     override fun handle(session: WebSocketSession): Mono<Void> {
         val input = session.receive()
+                .map { ev -> ev.payloadAsText }
+                .filter { ev -> ev.indexOf(":")>0 }
                 .map { ev ->
-                    val parts = ev.payloadAsText.split(":")
+                    val parts = ev.split(":")
                     Event(sender = parts[0].toInt(), value = parts[1].toInt())
                 }
                 .filter { ev -> isPrime(ev.value) }
