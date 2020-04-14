@@ -54,9 +54,16 @@ const routes: Routes = [
   // { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   // { path: 'dashboard', component: DashboardComponent },
   // { path: 'monitor', component: MonitorComponent }
-
   {
     path: '',
+    component: BaseLayoutComponent,
+    children: [
+      // Dashboads
+      {path: '', component: AnalyticsComponent, data: {extraParameter: 'dashboardsMenu'}},
+    ]
+  },
+  {
+    path: 'demo',
     component: BaseLayoutComponent,
     children: [
       // Dashboads
@@ -94,13 +101,13 @@ const routes: Routes = [
     ]
   },
   {
-    path: '',
+    path: 'pages',
     component: PagesLayoutComponent,
     children: [
       // User Pages
-      {path: 'pages/login-boxed', component: LoginBoxedComponent, data: {extraParameter: ''}},
-      {path: 'pages/register-boxed', component: RegisterBoxedComponent, data: {extraParameter: ''}},
-      {path: 'pages/forgot-password-boxed', component: ForgotPasswordBoxedComponent, data: {extraParameter: ''}},
+      {path: 'login-boxed', component: LoginBoxedComponent, data: {extraParameter: ''}},
+      {path: 'register-boxed', component: RegisterBoxedComponent, data: {extraParameter: ''}},
+      {path: 'forgot-password-boxed', component: ForgotPasswordBoxedComponent, data: {extraParameter: ''}},
     ]
   },
   {path: '**', redirectTo: ''}
