@@ -10,7 +10,7 @@ import {animate, query, style, transition, trigger} from '@angular/animations';
   templateUrl: './monitor-layout.component.html',
   animations: [
 
-    trigger('architectUIAnimation', [
+    trigger('UIAnimation', [
       transition('* <=> *', [
         query(':enter, :leave', [
           style({
@@ -19,7 +19,6 @@ import {animate, query, style, transition, trigger} from '@angular/animations';
             flex: '1',
             transform: 'translateY(-20px)',
             flexDirection: 'column'
-
           }),
         ]),
         query(':enter', [

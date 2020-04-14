@@ -9,11 +9,10 @@
   <app-monitor-menus></app-monitor-menus>
   <div class="app-main__outer">
     <div class="app-main__inner">
-      <div [@architectUIAnimation]="o.isActivated ? o.activatedRoute : ''">
+      <div [@UIAnimation]="o.isActivated ? o.activatedRoute : ''">
         <router-outlet #o="outlet"></router-outlet>
       </div>
     </div>
-    <app-footer></app-footer>
   </div>
   <div class="sidebar-menu-overlay" (click)="toggleSidebarMobile()"></div>
 </div>
