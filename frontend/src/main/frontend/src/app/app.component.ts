@@ -9,6 +9,6 @@ export class AppComponent {
   title = 'agens-alert';
 
   constructor(){
-    
+
   }
 }
