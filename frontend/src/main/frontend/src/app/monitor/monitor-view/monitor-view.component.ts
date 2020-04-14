@@ -6,11 +6,11 @@ import am4themes_animated from "@amcharts/amcharts4/themes/animated";
 am4core.useTheme(am4themes_animated);
 
 @Component({
-  selector: 'app-dashboard',
-  templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.css']
+  selector: 'app-monitor-view',
+  templateUrl: './monitor-view.component.html',
+  styleUrls: ['./monitor-view.component.scss']
 })
-export class DashboardComponent implements AfterViewInit {
+export class MonitorViewComponent implements AfterViewInit {
 
   private chart: am4charts.XYChart;
 

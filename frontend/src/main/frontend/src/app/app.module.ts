@@ -14,11 +14,13 @@ import {rootReducer, ArchitectUIState} from './ThemeOptions';
 import {ConfigActions} from './ThemeOptions/config.actions';
 import {LoadingBarRouterModule} from '@ngx-loading-bar/router';
 
-// import { DashboardComponent } from './dashboard/dashboard.component';
-// import { MonitorComponent } from './monitor/monitor.component';
+// Monitor of Agenspop
+import { MonitorListComponent } from './monitor/monitor-list/monitor-list.component';
+import { MonitorViewComponent } from './monitor/monitor-view/monitor-view.component';
+import { MonitorLayoutComponent } from './monitor/monitor-layout/monitor-layout.component';
+import { MonitorMenusComponent } from './monitor/monitor-menus/monitor-menus.component';
 
 // BOOTSTRAP COMPONENTS
-
 import {AngularFontAwesomeModule} from 'angular-font-awesome';
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 import {PerfectScrollbarModule} from 'ngx-perfect-scrollbar';
@@ -27,40 +29,33 @@ import {PerfectScrollbarConfigInterface} from 'ngx-perfect-scrollbar';
 import {ChartsModule} from 'ng2-charts';
 
 // LAYOUT
-
 import {BaseLayoutComponent} from './Layout/base-layout/base-layout.component';
 import {PagesLayoutComponent} from './Layout/pages-layout/pages-layout.component';
 import {PageTitleComponent} from './Layout/Components/page-title/page-title.component';
 
 // HEADER
-
 import {HeaderComponent} from './Layout/Components/header/header.component';
 import {SearchBoxComponent} from './Layout/Components/header/elements/search-box/search-box.component';
 import {UserBoxComponent} from './Layout/Components/header/elements/user-box/user-box.component';
 
 // SIDEBAR
-
 import {SidebarComponent} from './Layout/Components/sidebar/sidebar.component';
 import {LogoComponent} from './Layout/Components/sidebar/elements/logo/logo.component';
 
 // FOOTER
-
 import {FooterComponent} from './Layout/Components/footer/footer.component';
 
 // DEMO PAGES
 
 // Dashboards
-
 import {AnalyticsComponent} from './DemoPages/Dashboards/analytics/analytics.component';
 
 // Pages
-
 import {ForgotPasswordBoxedComponent} from './DemoPages/UserPages/forgot-password-boxed/forgot-password-boxed.component';
 import {LoginBoxedComponent} from './DemoPages/UserPages/login-boxed/login-boxed.component';
 import {RegisterBoxedComponent} from './DemoPages/UserPages/register-boxed/register-boxed.component';
 
 // Elements
-
 import {StandardComponent} from './DemoPages/Elements/Buttons/standard/standard.component';
 import {DropdownsComponent} from './DemoPages/Elements/dropdowns/dropdowns.component';
 import {CardsComponent} from './DemoPages/Elements/cards/cards.component';
@@ -69,7 +64,6 @@ import {TimelineComponent} from './DemoPages/Elements/timeline/timeline.componen
 import {IconsComponent} from './DemoPages/Elements/icons/icons.component';
 
 // Components
-
 import {AccordionsComponent} from './DemoPages/Components/accordions/accordions.component';
 import {TabsComponent} from './DemoPages/Components/tabs/tabs.component';
 import {CarouselComponent} from './DemoPages/Components/carousel/carousel.component';
@@ -79,25 +73,20 @@ import {PaginationComponent} from './DemoPages/Components/pagination/pagination.
 import {TooltipsPopoversComponent} from './DemoPages/Components/tooltips-popovers/tooltips-popovers.component';
 
 // Tables
-
 import {RegularComponent} from './DemoPages/Tables/regular/regular.component';
 import {TablesMainComponent} from './DemoPages/Tables/tables-main/tables-main.component';
 
 // Widgets
-
 import {ChartBoxes3Component} from './DemoPages/Widgets/chart-boxes3/chart-boxes3.component';
 
 // Forms Elements
-
 import {ControlsComponent} from './DemoPages/Forms/Elements/controls/controls.component';
 import {LayoutComponent} from './DemoPages/Forms/Elements/layout/layout.component';
 
 // Charts
-
 import {ChartjsComponent} from './DemoPages/Charts/chartjs/chartjs.component';
 
 // Chart.js Examples
-
 import {LineChartComponent} from './DemoPages/Charts/chartjs/examples/line-chart/line-chart.component';
 import {BarChartComponent} from './DemoPages/Charts/chartjs/examples/bar-chart/bar-chart.component';
 import {ScatterChartComponent} from './DemoPages/Charts/chartjs/examples/scatter-chart/scatter-chart.component';
@@ -116,8 +105,12 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
 @NgModule({
   declarations: [
     AppComponent,
-    // DashboardComponent,
-    // MonitorComponent
+
+    // Monitor of Agenspop
+    MonitorListComponent,
+    MonitorViewComponent,
+    MonitorLayoutComponent,
+    MonitorMenusComponent,
 
     // LAYOUT
     BaseLayoutComponent,

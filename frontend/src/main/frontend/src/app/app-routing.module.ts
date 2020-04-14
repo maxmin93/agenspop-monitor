@@ -3,14 +3,17 @@ import { Routes, RouterModule } from '@angular/router';
 // import { DashboardComponent } from './dashboard/dashboard.component';
 // import { MonitorComponent } from './monitor/monitor.component';
 
+// Monitor of Agenspop
+import { MonitorListComponent } from './monitor/monitor-list/monitor-list.component';
+import { MonitorViewComponent } from './monitor/monitor-view/monitor-view.component';
+import { MonitorLayoutComponent } from './monitor/monitor-layout/monitor-layout.component';
+import { MonitorMenusComponent } from './monitor/monitor-menus/monitor-menus.component';
 
+// DEMO PAGES
 import {BaseLayoutComponent} from './Layout/base-layout/base-layout.component';
 import {PagesLayoutComponent} from './Layout/pages-layout/pages-layout.component';
 
-// DEMO PAGES
-
 // Dashboards
-
 import {AnalyticsComponent} from './DemoPages/Dashboards/analytics/analytics.component';
 
 // Pages
@@ -51,15 +54,12 @@ import {ChartjsComponent} from './DemoPages/Charts/chartjs/chartjs.component';
 
 
 const routes: Routes = [
-  // { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  // { path: 'dashboard', component: DashboardComponent },
-  // { path: 'monitor', component: MonitorComponent }
   {
     path: '',
-    component: BaseLayoutComponent,
+    component: MonitorLayoutComponent,
     children: [
-      // Dashboads
-      {path: '', component: AnalyticsComponent, data: {extraParameter: 'dashboardsMenu'}},
+      {path: '', component: MonitorListComponent, data: {extraParameter: 'dashboardsMenu'}},
+      {path: 'view', component: MonitorViewComponent, data: {extraParameter: 'elementsMenu'}},
     ]
   },
   {
