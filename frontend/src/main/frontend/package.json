@@ -35,7 +35,7 @@
     "chartjs-plugin-annotation": "^0.5.7",
     "chartjs-plugin-datalabels": "^0.7.0",
     "font-awesome": "^4.7.0",
-    "jquery": "^1.12.4",
+    "jquery": "^3.4.0",
     "lodash-es": "^4.17.15",
     "luxon": "^1.23.0",
     "ng2-charts": "^2.3.0",
