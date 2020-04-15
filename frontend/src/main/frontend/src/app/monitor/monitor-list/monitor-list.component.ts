@@ -8,8 +8,8 @@ import {Color} from 'ng2-charts/ng2-charts';
 })
 export class MonitorListComponent implements OnInit {
 
-  heading = 'Analytics Dashboard';
-  subheading = 'This is an example dashboard created using build-in elements and components.';
+  heading = 'Monitor Dashboard';
+  subheading = 'This is an real-time monitor dashboard for Agenspop.';
   icon = 'pe-7s-plane icon-gradient bg-tempting-azure';
 
   slideConfig6 = {
