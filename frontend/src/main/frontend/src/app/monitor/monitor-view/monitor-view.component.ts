@@ -17,7 +17,7 @@ export class MonitorViewComponent implements AfterViewInit {
   heading = 'Monitor Dashboard';
   subheading = 'This is an real-time monitor dashboard for Agenspop.';
   icon = 'pe-7s-plane icon-gradient bg-tempting-azure';
-    
+
   constructor(private zone: NgZone) { }
 
   ngAfterViewInit() {
