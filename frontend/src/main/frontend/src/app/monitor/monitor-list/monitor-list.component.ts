@@ -74,6 +74,17 @@ const MONITOR_DATA: Items[] = [
     count: 10,
     total: 100
   },
+  {
+    id: 601,
+    datasource: 'sample',
+    name: 'monitor #6',
+    labels: 'software',
+    queries: 'query of sample',
+    status: 'progress',
+    starttime: new Date('2019-05-02'),
+    count: 10,
+    total: 100
+  },
 ];
 
 @Component({
@@ -89,6 +100,7 @@ export class MonitorListComponent implements AfterViewInit {
 
   items = MONITOR_DATA;
   page = 1;
+  pageSize = 5;
 
   private chart: am4charts.XYChart;
 

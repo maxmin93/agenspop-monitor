@@ -57,6 +57,7 @@
     <div class="card-header-title font-size-lg text-capitalize font-weight-normal">Monitor List</div>
   </div>
   <div class="table-responsive">
+
     <table class="align-middle text-truncate mb-0 table table-borderless table-hover">
       <thead>
       <tr>
@@ -71,7 +72,7 @@
       </tr>
       </thead>
       <tbody>
-      <tr *ngFor="let item of items; index as i">
+      <tr *ngFor="let item of items | slice : (page-1)*pageSize : (page-1)*pageSize + pageSize; index as i">
         <th class="text-center text-muted" style="width: 80px;" scope="row">{{ item.id }}</th>
         <td class="text-center"><a [routerLink]="">{{ item.name }}</a></td>
         <td class="text-center"><a [routerLink]="">{{ item.datasource }}</a></td>
@@ -86,10 +87,10 @@
           <span class="pr-2 opacity-6"><i class="fa fa-business-time"></i></span>
           {{ item.starttime | date }}
         </td>
-        <td class="text-center" style="width: 200px;">
+        <td class="text-center" style="width: 100px;">
           <div class="widget-numbers fsize-1 text-danger">{{ item.count }}</div>
         </td>
-        <td class="text-center">
+        <td class="text-center" style="width: 160px;">
           <div role="group" class="btn-group-sm btn-group">
             <button class="btn-shadow btn btn-primary">{{ item.status == 'held' ? 'resume' : 'hold' }}</button>
             &nbsp;
@@ -99,19 +100,11 @@
       </tr>
       </tbody>
     </table>
-    <div class="d-block p-4 text-center card-footer"> <!-- NOT WORK: align=center -->
-      <ngb-pagination [collectionSize]="70" [(page)]="page" aria-label="Default pagination"></ngb-pagination>
-    </div>
-  </div>
 
-  <!--
-  <div class="d-block p-4 text-center card-footer">
-    <button class="btn-pill btn-shadow btn-wide fsize-1 btn btn-dark btn-lg">
-      <span class="mr-2 opacity-7">
-          <i class="fa fa-cog fa-spin"></i>
-      </span>
-      <span class="mr-1">View Complete Report</span>
-    </button>
+    <div class="row justify-content-center card-footer" style="margin: auto">
+      <!-- **REFERENCE : https://ng-bootstrap.github.io/#/components/pagination/overview -->
+      <ngb-pagination [collectionSize]="items.length" [(page)]="page" [pageSize]="pageSize" aria-label="Default pagination"></ngb-pagination>
+    </div>
+
   </div>
-  -->
 </div>
