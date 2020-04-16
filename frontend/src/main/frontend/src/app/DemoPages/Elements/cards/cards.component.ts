@@ -3,8 +3,8 @@ import {DomSanitizer} from '@angular/platform-browser';
 
 const PrimaryWhite = '#fff';
 const SecondaryGrey = '#ccc';
-const PrimaryRed = 'var(--danger)';
-const SecondaryBlue = 'var(--primary)';
+const PrimaryRed = 'red';
+const SecondaryBlue = 'blue';
 
 @Component({
   selector: 'app-cards',

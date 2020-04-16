@@ -1,6 +1,76 @@
 import { Component, OnInit } from '@angular/core';
 import {Color} from 'ng2-charts/ng2-charts';
 
+interface Items {
+  id: number;
+  datasource: string;
+  name: string;
+  labels: string;
+  queries: string;
+  status: string;
+  starttime: Date;
+  count: number;
+  total: number;
+}
+
+const MONITOR_DATA: Items[] = [
+  {
+    id: 101,
+    datasource: 'northwind',
+    name: 'monitor #1',
+    labels: 'order',
+    queries: 'query of northwind',
+    status: 'held',
+    starttime: new Date('2019-01-01'),
+    count: 10,
+    total: 100
+  },
+  {
+    id: 201,
+    datasource: 'northwind',
+    name: 'monitor #2',
+    labels: 'customer',
+    queries: 'query of northwind',
+    status: 'progress',
+    starttime: new Date('2019-01-02'),
+    count: 10,
+    total: 100
+  },
+  {
+    id: 301,
+    datasource: 'airroutes',
+    name: 'monitor #3',
+    labels: 'airport',
+    queries: 'query of airroutes',
+    status: 'held',
+    starttime: new Date('2019-03-01'),
+    count: 10,
+    total: 100
+  },
+  {
+    id: 401,
+    datasource: 'airroutes',
+    name: 'monitor #4',
+    labels: 'route',
+    queries: 'query of airroutes',
+    status: 'canceled',
+    starttime: new Date('2019-03-02'),
+    count: 10,
+    total: 100
+  },
+  {
+    id: 501,
+    datasource: 'sample',
+    name: 'monitor #5',
+    labels: 'person',
+    queries: 'query of sample',
+    status: 'completed',
+    starttime: new Date('2019-05-01'),
+    count: 10,
+    total: 100
+  },
+];
+
 @Component({
   selector: 'app-monitor-list',
   templateUrl: './monitor-list.component.html',
@@ -8,8 +78,8 @@ import {Color} from 'ng2-charts/ng2-charts';
 })
 export class MonitorListComponent implements OnInit {
 
-  heading = 'Monitor Dashboard';
-  subheading = 'This is an real-time monitor dashboard for Agenspop.';
+  heading = 'Monitor List';
+  subheading = 'This is an real-time monitor list for Agenspop.';
   icon = 'pe-7s-plane icon-gradient bg-tempting-azure';
 
   slideConfig6 = {
@@ -20,6 +90,9 @@ export class MonitorListComponent implements OnInit {
     adaptiveHeight: true,
     dots: true,
   };
+
+  items = MONITOR_DATA;
+  page = 1;
 
   public datasets = [
     {
