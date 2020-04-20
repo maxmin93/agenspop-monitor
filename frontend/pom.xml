@@ -54,7 +54,8 @@
                             <goal>npm</goal>
                         </goals>
                         <configuration>
-                            <arguments>run product</arguments>
+                            <arguments>run build</arguments>
+                            <!-- <arguments>run product</arguments> -->
                         </configuration>
                     </execution>
 
