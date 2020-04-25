@@ -254,7 +254,7 @@ export class MonitorListComponent implements AfterViewInit {
       if (price1 < 100) {
         price1 = 100;
       }
-    
+
       if (price2 < 100) {
         price2 = 100;
       }

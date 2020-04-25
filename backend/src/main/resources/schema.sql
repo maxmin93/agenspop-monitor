@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS event_qry(
     active_yn BOOLEAN NOT NULL DEFAULT TRUE,
     datasource VARCHAR(100) NOT NULL,               -- datasource
     query VARCHAR(2000) NOT NULL,                   -- gremlin query
-    cr_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP(),  -- create time
-    up_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP()   -- update time
+    cr_date DATE DEFAULT CURRENT_DATE(),            -- create date
+    up_date DATE DEFAULT CURRENT_DATE()             -- update date
 );
 /*
 truncate table event_qry;
@@ -29,16 +29,18 @@ select * from event_qry;
 CREATE TABLE IF NOT EXISTS event_row(
     id BIGINT AUTO_INCREMENT(101) PRIMARY KEY,
     qid INT NOT NULL,
-    type ENUM('nodes','edges') NOT NULL,          -- nodes, edges
-    labels ARRAY NOT NULL DEFAULT (),   -- labels
-    ids ARRAY DEFAULT (),               -- ids
+    type ENUM('nodes','edges') NOT NULL DEFAULT 'nodes',
+--    labels ARRAY NOT NULL DEFAULT (),   -- labels
+--    ids ARRAY NOT NULL DEFAULT (),      -- ids
+    labels VARCHAR(2000) NOT NULL DEFAULT '',   -- json(List)
+    ids VARCHAR NOT NULL DEFAULT '',            -- json(List)
     edate DATE DEFAULT CURRENT_DATE(),
-    etime TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
+    etime TIME DEFAULT CURRENT_TIME()
 );
 /*
 truncate table event_row;
 insert into event_row(qid, type, labels, ids) values
-(101, 'nodes', ('person'), ('modern_1','modern_2','modern_4','modern_6')),
+(101, 'nodes', ('person'), '"modern_1","modern_2","modern_4","modern_6'),
 (102, 'nodes', ('software'), ('modern_3','modern_5'));
 select * from event_row;
 
@@ -49,20 +51,20 @@ select * from event_row where array_contains((1,2,103,104),id);
 select * from event_row where edate = DATE '2020-04-20';
 */
 
--- DROP TABLE IF EXISTS event_stat;
-CREATE TABLE IF NOT EXISTS event_stat(
+-- DROP TABLE IF EXISTS event_agg;
+CREATE TABLE IF NOT EXISTS event_agg(
     id INT AUTO_INCREMENT(101) PRIMARY KEY,
     edate DATE DEFAULT CURRENT_DATE(),
     qid INT NOT NULL DEFAULT 0,         -- 0 means total qids
-    type ENUM('nodes','edges') NOT NULL,          -- nodes, edges
+    type VARCHAR(10) NOT NULL,          -- nodes, edges
     labels ARRAY NOT NULL DEFAULT (),   -- labels : array of array
     row_cnt INT NOT NULL DEFAULT 0,     -- # of records
     ids_cnt INT NOT NULL DEFAULT 0      -- sum of ids of all records
 );
 
 /*
-truncate table event_stat;
-insert into event_stat(edate, qid, type, labels, row_cnt, ids_cnt) values
+truncate table event_agg;
+insert into event_agg(edate, qid, type, labels, row_cnt, ids_cnt) values
 (DATE '2019-09-01', 101, 'nodes', (('person')), 10, 901),
 (DATE '2019-09-01', 102, 'nodes', (('software')), 15, 651),
 (DATE '2019-10-01', 101, 'nodes', (('person')), 10, 1001),
@@ -80,7 +82,7 @@ insert into event_stat(edate, qid, type, labels, row_cnt, ids_cnt) values
 (DATE '2020-04-01', 101, 'nodes', (('person')), 10, 121),
 (DATE '2020-04-01', 102, 'nodes', (('software')), 15, 31);
 
-merge into event_stat(id, edate, qid, type, labels, row_cnt, ids_cnt)
+merge into event_agg(id, edate, qid, type, labels, row_cnt, ids_cnt)
 select TRANSACTION_ID(), edate, qid, type, array_agg(labels), count(id), sum(array_length(ids))
 from event_row
 group by edate, qid, type

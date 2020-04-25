@@ -1,5 +1,6 @@
 package net.bitnine.ag3.agensalert.config
 
+import net.bitnine.ag3.agensalert.model.event.EventQryHandler
 import net.bitnine.ag3.agensalert.model.user.UserHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -22,6 +23,17 @@ class WebConfiguration {
         POST("/users", userHandler::addUser)
         PUT("/users/{id}", userHandler::updateUser)
         DELETE("/users/{id}", userHandler::deleteUser)
+    }
+
+    @Bean
+    fun eventQryRoute(qryHandler: EventQryHandler) = coRouter {
+        GET("/query/hello", qryHandler::hello)
+        GET("/query", qryHandler::findAll)
+        GET("/query/search", qryHandler::search)
+        GET("/query/{id}", qryHandler::findQuery)
+        POST("/query", qryHandler::addQuery)
+        PUT("/query/{id}", qryHandler::updateQuery)
+        DELETE("/query/{id}", qryHandler::deleteQuery)
     }
 }
 
