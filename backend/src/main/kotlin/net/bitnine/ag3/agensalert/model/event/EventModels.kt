@@ -30,6 +30,10 @@ enum class EleType { nodes, edges }
 // ==> 포기!! ArrayCodec 이 작동하지 않는다. jacksonMapper로 List를 String으로 변환
 // https://github.com/r2dbc/r2dbc-h2/tree/master/src/main/java/io/r2dbc/h2/codecs
 
+// **NOTE: 이건 어떨까?
+// R2dbcCustomConversions 에 Array 타입 등록해서 List로 Read/Write 한다면..
+// https://medium.com/@nikola.babic1/mapping-to-json-fields-with-spring-data-r2dbc-and-reactive-postgres-driver-1db765067dc5
+
 // data models
 @Table("event_row")
 data class EventRow(

@@ -92,7 +92,8 @@ class DbConfig {
 
 
         val stream = Stream.of(
-            EventRow(qid=101, type="nodes", labels=writer.writeValueAsString(listOf("person", "software"))),
+//            EventRow(qid=101, type="nodes", labels=writer.writeValueAsString(listOf("person", "software"))),
+            EventRow(qid=101, type="nodes"),
             EventRow(qid=107, type="nodes")
 //            EventRow(id=null, qid=101, type="nodes", labels=arrayOf("person","software"), ids=arrayOf("modern_73","modern_24","modern_70","modern_99") ),
 //                    // , edate=LocalDate.of(2020,4,23), etime=LocalTime.of(2,45)),
