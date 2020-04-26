@@ -6,10 +6,11 @@ import net.bitnine.ag3.agensalert.model.user.User
 import net.bitnine.ag3.agensalert.model.user.UserDTO
 import net.bitnine.ag3.agensalert.model.user.UserRepository
 import net.bitnine.ag3.agensalert.model.user.toModel
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-class UserService(private val repo: UserRepository) {
+class UserService(@Autowired val repo: UserRepository) {
 
     suspend fun findAll() = repo.findAll().asFlow()
     suspend fun findById(id: Long) = repo.findById(id).awaitFirstOrNull()

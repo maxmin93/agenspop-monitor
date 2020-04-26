@@ -3,12 +3,13 @@ package net.bitnine.ag3.agensalert.model.user
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.*
 
 @Component
-class UserHandler(val service: UserService) {
+class UserHandler(@Autowired val service: UserService) {
     private val logger = LoggerFactory.getLogger(UserHandler::class.java)
 
     suspend fun hello(request: ServerRequest): ServerResponse {

@@ -53,7 +53,7 @@ class DbConfig {
         initDb
                 .then()
                 .thenMany(saveAll)
-                .subscribe()
+                .subscribe{ println("init: Employee $it")}
     }
 
     @Bean
@@ -66,7 +66,7 @@ class DbConfig {
 
         val sdate: LocalDate = LocalDate.of(2018,1,1)
         val edate: LocalDate = LocalDate.now()
-        var rowStream = arrayListOf<EventRow>()
+        var rows = arrayListOf<EventRow>()
 
         val mapper = jacksonObjectMapper()
         val writer = mapper.writerFor(object: TypeReference<List<String>>(){})
@@ -84,23 +84,29 @@ class DbConfig {
             val qid = Random.nextLong(101,109)
             val etime = LocalTime.of(Random.nextInt(0, 24), Random.nextInt(0, 60))
             val labels : String = writer.writeValueAsString(listOf("person", "software"))
-            val row = EventRow(id = null, qid=qid, type="nodes", labels=labels,
+            val row = EventRow(id = null, qid=qid, type="nodes", labels=labels, ids=randomIds(writer),
                     edate=dt, etime=etime)
-            rowStream.add(row)
+            rows.add(row)
         }
-        // rowStream.forEach{ println(it) }
+        println("insert rows="+rows.size+"\n")
 
+        val initAgg = db.execute {
+            """
+truncate table event_agg;
+merge into event_agg(id, edate, qid, type, labels, row_cnt)
+select TRANSACTION_ID(), edate, qid, type, listagg(labels,','), count(id)
+from event_row
+group by edate, qid, type
+order by edate, qid, type;
+            """
+        }
 
-        val stream = Stream.of(
-            EventRow(qid=101, type="nodes", labels=writer.writeValueAsString(listOf("person", "software"))),
-            EventRow(qid=107, type="nodes")
-//            EventRow(id=null, qid=101, type="nodes", labels=arrayOf("person","software"), ids=arrayOf("modern_73","modern_24","modern_70","modern_99") ),
-//                    // , edate=LocalDate.of(2020,4,23), etime=LocalTime.of(2,45)),
-//            EventRow(id=null, qid=107, type="nodes", labels=arrayOf("person","software"), ids=arrayOf("modern_70","modern_84","modern_34","modern_20") )
-//                    // , edate=LocalDate.of(2020,4,24), etime=LocalTime.of(10,22))
-        )
-        val saveAll = rowRepository.saveAll(Flux.fromStream(stream))
-        saveAll.subscribe()
+        val saveAll = rowRepository.saveAll(Flux.fromStream(rows.stream()))
+        saveAll.then(initAgg.then()).subscribe({},{
+            println("** Error: $it")
+        },{
+            println("** Completed: $it")
+        })
     }
 
     fun randomIds(writer: ObjectWriter): String {

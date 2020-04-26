@@ -7,6 +7,7 @@ import org.springframework.data.r2dbc.core.DatabaseClient
 
 import org.springframework.stereotype.Service
 import reactor.kotlin.core.publisher.toFlux
+import java.time.LocalDate
 
 @Service
 class EventQryService(private val repo: EventQryRepository) {
@@ -28,8 +29,12 @@ class EventQryService(private val repo: EventQryRepository) {
             true
         } else false
     }
-
 }
+
+// **NOTE :
+// Non-blocking Spring Boot with Kotlin Coroutines
+// https://www.baeldung.com/spring-boot-kotlin-coroutines
+
 
 @Service
 class EventRowService(
@@ -37,15 +42,15 @@ class EventRowService(
         private val db: DatabaseClient
 ) {
 
-    suspend fun findAll() = repo.findAll().asFlow()
+    suspend fun findAll(): Flow<EventRow> {
+        val stream = repo.findAll()
+        return stream.asFlow()
+    }
     suspend fun findById(id: Long) = repo.findById(id).awaitFirstOrNull()
+
     suspend fun findByQid(qid: Long) = repo.findByQid(qid).awaitFirstOrNull()
-
-    suspend fun findArray() {
-        val rs = db
-                .execute("select id, qid, type, labels from event_row;").fetch().all()
-
-        rs.toFlux()
+    suspend fun findByDateTerms(from: LocalDate, to: LocalDate?): Flow<EventRow> {
+        return repo.findAllByDateTerms(from, to).asFlow()
     }
 
     suspend fun addOne(row: EventRow) = repo.save(row).awaitFirstOrNull()
@@ -60,15 +65,19 @@ class EventRowService(
             true
         } else false
     }
-
 }
 
+
 @Service
-class EventStatService(private val repo: EventStatRepository) {
+class EventAggService(private val repo: EventAggRepository) {
 
     suspend fun findAll() = repo.findAll().asFlow()
     suspend fun findById(id: Long) = repo.findById(id).awaitFirstOrNull()
+
     suspend fun findByQid(qid: Long) = repo.findByQid(qid).awaitFirstOrNull()
+    suspend fun findByDateTerms(from: LocalDate, to: LocalDate?): Flow<EventAgg> {
+        return repo.findAllByDateTerms(from, to).asFlow()
+    }
 
     suspend fun addOne(agg: EventAgg) = repo.save(agg).awaitFirstOrNull()
     suspend fun updateOne(id: Long, agg: EventAgg): EventAgg? {
@@ -82,5 +91,4 @@ class EventStatService(private val repo: EventStatRepository) {
             true
         } else false
     }
-
 }

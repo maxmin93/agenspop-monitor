@@ -7,7 +7,6 @@ CREATE TABLE users (
                 email VARCHAR(255) NOT NULL,
                 avatar VARCHAR(255)
 );
-
  */
 truncate table users;
 
@@ -32,7 +31,6 @@ CREATE TABLE IF NOT EXISTS event_qry(
 */
 
 truncate table event_qry;
-
 insert into event_qry(datasource, query) values
 ('modern','g.V().hasLabel("person")'),
 ('modern','g.E().hasLabel("created")'),

@@ -27,8 +27,8 @@ interface EventRowRepository : ReactiveCrudRepository<EventRow, Long> {
     @Query("SELECT r.* FROM event_row r WHERE r.qid = :qid order by id")
     fun findByQid(qid: Long): Flux<EventRow>
 
-    @Query("SELECT r.* FROM event_row r WHERE r.edate between :sdate and :edate")
-    fun findAllByDateTerms(sdate: Date, edate: Date): Flux<EventRow>
+    @Query("SELECT r.* FROM event_row r WHERE r.edate between :from and :to")
+    fun findAllByDateTerms(from: LocalDate, to: LocalDate? = LocalDate.now()): Flux<EventRow>
 
     @Query("SELECT r.* FROM event_row r, event_qry q WHERE q.datasource = :datasource and q.id = r.qid order by r.edate, r.id")
     fun findAllByDatasource(datasource: String): Flux<EventRow>
@@ -44,19 +44,19 @@ interface EventRowRepository : ReactiveCrudRepository<EventRow, Long> {
     @Query("select TRANSACTION_ID() as id, edate, qid, type, " +
             "array_agg(labels) as labels, count(id) as row_cnt, sum(array_length(ids)) as ids_cnt\n" +
             "from event_row\n" +
-            "where edate >= :sdate\n" +
+            "where edate >= :from\n" +
             "group by edate, qid, type\n" +
             "order by edate, qid, type;")
-    fun groupByEdateQid(sdate: LocalDate): Flux<EventAgg>
+    fun groupByEdateQid(from: LocalDate): Flux<EventAgg>
 }
 
-interface EventStatRepository : ReactiveCrudRepository<EventAgg, Long> {
+interface EventAggRepository : ReactiveCrudRepository<EventAgg, Long> {
 
     @Query("SELECT s.* FROM event_stat s WHERE s.qid = :qid order by id")
     fun findByQid(qid: Long): Flux<EventAgg>
 
-    @Query("SELECT s.* FROM event_stat s WHERE s.edate between :sdate and :edate")
-    fun findAllByDateTerms(sdate: Date, edate: Date): Flux<EventAgg>
+    @Query("SELECT s.* FROM event_stat s WHERE s.edate between :from and :to")
+    fun findAllByDateTerms(from: LocalDate, to: LocalDate? = LocalDate.now()): Flux<EventAgg>
 
     @Query("SELECT s.* FROM event_stat s, event_qry q WHERE q.datasource = :datasource and q.id = s.qid order by s.edate, r.id")
     fun findAllByDatasource(datasource: String): Flux<EventAgg>
