@@ -1,6 +1,9 @@
 package net.bitnine.ag3.agensalert.model.event
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Column
@@ -16,7 +19,9 @@ data class EventQry(
         @Column("active_yn") val active_yn: Boolean,
         @Column("datasource") val datasource: String,
         @Column("query") val query: String,                 // cannot be modified, only insert
+        @JsonFormat(pattern="yyyy-MM-dd")
         @Column("cr_date") val cr_date: LocalDate? = null,
+        @JsonFormat(pattern="yyyy-MM-dd")
         @Column("up_date") val up_date: LocalDate? = null   // when deactivated or deleted
 )
 
@@ -40,7 +45,9 @@ data class EventRow(
 //        @Column("ids") val ids: Array<Any>? = null,
         @Column("labels") val labels: String? = null,
         @Column("ids") val ids: String? = null,
+        @JsonFormat(pattern="yyyy-MM-dd")
         @Column("edate") val edate: LocalDate? = null,
+        @JsonFormat(pattern="HH:mm:ss")
         @Column("etime") val etime: LocalTime? = null
 )
 
@@ -48,6 +55,7 @@ data class EventRow(
 @Table("event_agg")
 data class EventAgg(
         @Id val id: Long? = null,
+        @JsonFormat(pattern="yyyy-MM-dd")
         @Column("edate") val edate: LocalDate,
         @Column("qid") val qid: Long = 0,
         @Column("type") val type: String,

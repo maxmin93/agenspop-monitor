@@ -59,9 +59,12 @@ CREATE TABLE IF NOT EXISTS event_row(
 
 truncate table event_row;
 
-insert into event_row(qid, type, labels, ids) values
-(102, 'nodes', '["person"]', '["modern_1","modern_2","modern_4","modern_6"]'),
-(103, 'nodes', '["software"]', '["modern_3","modern_5"]');
+--insert into event_row(qid, type, labels, ids) values
+--(102, 'nodes', 'person', 'modern_1,modern_2,modern_4,modern_6'),
+--(102, 'nodes', 'software', 'modern_3,modern_5'),
+--(103, 'nodes', 'person', 'modern_1,modern_2,modern_4,modern_6'),
+--(103, 'nodes', 'software', 'modern_3,modern_5')
+--;
 
 -- select id, qid, type, labels from event_row;
 

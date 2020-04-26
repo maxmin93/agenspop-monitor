@@ -83,23 +83,31 @@ class DbConfig {
         for( dt in sdate..edate ){
             val qid = Random.nextLong(101,109)
             val etime = LocalTime.of(Random.nextInt(0, 24), Random.nextInt(0, 60))
-            val labels : String = writer.writeValueAsString(listOf("person", "software"))
-            val row = EventRow(id = null, qid=qid, type="nodes", labels=labels, ids=randomIds(writer),
+            // val labels : String = writer.writeValueAsString(listOf("person", "software"))
+            val row = EventRow(id = null, qid=qid, type="nodes", ids=randomIds(writer),
+                    labels=listOf("person", "software").joinToString(separator=","),
                     edate=dt, etime=etime)
             rows.add(row)
         }
         println("insert rows="+rows.size+"\n")
 
-        val initAgg = db.execute {
+// **NOTE :
+// Binding Values to Queries
+// https://github.com/spring-projects/spring-data-r2dbc/blob/master/src/main/asciidoc/reference/r2dbc-sql.adoc
+// ==> DATE 에 대한 bind 가 안됨 (통채로 문자열화 시켜 넣어야 작동)
+
+//      -- truncate table event_agg;
+        val initAgg = db.execute(
             """
-truncate table event_agg;
 merge into event_agg(id, edate, qid, type, labels, row_cnt)
 select TRANSACTION_ID(), edate, qid, type, listagg(labels,','), count(id)
 from event_row
+where edate >= DATE '2019-01-01'
 group by edate, qid, type
 order by edate, qid, type;
             """
-        }
+        )
+        //.bind("from", LocalDate.of(2019,1,1))  //"'2019-01-01'")    // LocalDate.of(2019,1,1))
 
         val saveAll = rowRepository.saveAll(Flux.fromStream(rows.stream()))
         saveAll.then(initAgg.then()).subscribe({},{
@@ -116,7 +124,7 @@ order by edate, qid, type;
             ids.add("modern_"+Random.nextInt(1, 100))
             count -= 1
         }
-        return writer.writeValueAsString(ids)
+        return ids.joinToString(separator=",")      //writer.writeValueAsString(ids)
     }
 
     operator fun ClosedRange<LocalDate>.iterator() : Iterator<LocalDate> {
