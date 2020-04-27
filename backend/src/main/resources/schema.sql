@@ -25,10 +25,11 @@ CREATE TABLE IF NOT EXISTS event_row(
     qid INT NOT NULL,
 --    type ENUM('nodes','edges') NOT NULL DEFAULT 'nodes',
     type VARCHAR(10) NOT NULL DEFAULT 'nodes',
---    labels ARRAY NOT NULL DEFAULT (),   -- labels
---    ids ARRAY NOT NULL DEFAULT (),      -- ids
-    labels VARCHAR(2000) NOT NULL DEFAULT '[]',   -- json(List)
-    ids VARCHAR(5000) NOT NULL DEFAULT '[]',            -- json(List)
+--    labels ARRAY NOT NULL DEFAULT (),             -- labels
+--    ids ARRAY NOT NULL DEFAULT (),                -- ids
+    labels VARCHAR(2000) NOT NULL DEFAULT '',       -- joinToString
+    ids VARCHAR NOT NULL DEFAULT '',          -- joinToString
+    ids_cnt INT NOT NULL DEFAULT 0,                 -- count of ids
     edate DATE DEFAULT CURRENT_DATE(),
     etime TIME DEFAULT CURRENT_TIME()
 );
@@ -41,12 +42,12 @@ CREATE TABLE IF NOT EXISTS event_row(
 CREATE TABLE IF NOT EXISTS event_agg(
     id INT AUTO_INCREMENT(101) PRIMARY KEY,
     edate DATE DEFAULT CURRENT_DATE(),
-    qid INT NOT NULL DEFAULT 0,         -- 0 means total qids
-    type VARCHAR(10) NOT NULL,          -- nodes, edges
---    labels ARRAY NOT NULL DEFAULT (),   -- labels : array of array
-    labels VARCHAR(2000) NOT NULL DEFAULT '[]',   -- json(List)
-    row_cnt INT NOT NULL DEFAULT 0,     -- # of records
-    ids_cnt INT NOT NULL DEFAULT 0      -- sum of ids of all records
+    qid INT NOT NULL DEFAULT 0,                     -- 0 means total qids
+    type VARCHAR(10) NOT NULL,                      -- nodes, edges
+--    labels ARRAY NOT NULL DEFAULT (),             -- labels : array of array
+    labels VARCHAR(2000) NOT NULL DEFAULT '',       -- joinToString
+    row_cnt INT NOT NULL DEFAULT 0,                 -- # of records
+    ids_cnt INT NOT NULL DEFAULT 0                  -- sum of count of ids
 );
 
 --merge into event_agg(id, edate, qid, type, labels, row_cnt, ids_cnt)

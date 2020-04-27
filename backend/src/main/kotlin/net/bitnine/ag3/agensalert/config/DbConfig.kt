@@ -53,7 +53,7 @@ class DbConfig {
         initDb
                 .then()
                 .thenMany(saveAll)
-                .subscribe{ println("init: Employee $it")}
+                .subscribe{ println("init: $it")}
     }
 
     @Bean
@@ -71,20 +71,12 @@ class DbConfig {
         val mapper = jacksonObjectMapper()
         val writer = mapper.writerFor(object: TypeReference<List<String>>(){})
 
-
-//        @Id val id: Long? = null,
-//        @Column("qid") val qid: Long,
-//        @Column("type") val type: String,
-//        @Column("labels") val labels: Array<String>,
-//        @Column("ids") val ids: Array<String>,
-//        @Column("edate") val edate: Date,
-//        @Column("etime") val etime: Timestamp
-
         for( dt in sdate..edate ){
             val qid = Random.nextLong(101,109)
             val etime = LocalTime.of(Random.nextInt(0, 24), Random.nextInt(0, 60))
-            // val labels : String = writer.writeValueAsString(listOf("person", "software"))
-            val row = EventRow(id = null, qid=qid, type="nodes", ids=randomIds(writer),
+            val ids_cnt = Random.nextLong(1, 2000)
+            val row = EventRow(id = null, qid=qid, type="nodes",
+                    ids_cnt=ids_cnt, ids=randomIds(ids_cnt),
                     labels=listOf("person", "software").joinToString(separator=","),
                     edate=dt, etime=etime)
             rows.add(row)
@@ -94,20 +86,23 @@ class DbConfig {
 // **NOTE :
 // Binding Values to Queries
 // https://github.com/spring-projects/spring-data-r2dbc/blob/master/src/main/asciidoc/reference/r2dbc-sql.adoc
-// ==> DATE 에 대한 bind 가 안됨 (통채로 문자열화 시켜 넣어야 작동)
+// ==> DATE 에 대한 bind 가 안됨 (통채로 문자열화 시켜 넣어야 작동) => IndexOutOfBoundsException
+//      .bind("from", LocalDate.of(2019,1,1))  => DATE '2019-01-01'
+//      DATE '2019-01-01'에서 'DATE' 없어도 괜찮음
 
-//      -- truncate table event_agg;
         val initAgg = db.execute(
+//      -- truncate table event_agg;
             """
-merge into event_agg(id, edate, qid, type, labels, row_cnt)
-select TRANSACTION_ID(), edate, qid, type, listagg(labels,','), count(id)
+delete from event_agg where edate >= DATE '2019-01-01'
+;                
+merge into event_agg(id, edate, qid, type, labels, row_cnt, ids_cnt)
+select TRANSACTION_ID(), edate, qid, type, listagg(labels,','), count(id), sum(ids_cnt)
 from event_row
 where edate >= DATE '2019-01-01'
 group by edate, qid, type
-order by edate, qid, type;
-            """
+order by edate, qid, type
+;            """
         )
-        //.bind("from", LocalDate.of(2019,1,1))  //"'2019-01-01'")    // LocalDate.of(2019,1,1))
 
         val saveAll = rowRepository.saveAll(Flux.fromStream(rows.stream()))
         saveAll.then(initAgg.then()).subscribe({},{
@@ -117,9 +112,9 @@ order by edate, qid, type;
         })
     }
 
-    fun randomIds(writer: ObjectWriter): String {
-        var count = Random.nextInt(1, 10)
+    fun randomIds(size: Long): String {
         var ids = arrayListOf<String>()
+        var count = size
         while( count > 0 ){
             ids.add("modern_"+Random.nextInt(1, 100))
             count -= 1

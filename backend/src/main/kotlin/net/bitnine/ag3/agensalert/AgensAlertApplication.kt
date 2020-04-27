@@ -1,9 +1,13 @@
 package net.bitnine.ag3.agensalert
 
+import net.bitnine.ag3.agensalert.config.MonitorProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
+import org.springframework.scheduling.annotation.EnableScheduling
 
 @SpringBootApplication
+@EnableConfigurationProperties(MonitorProperties::class)
 class AgensAlertApplication
 
 fun main(args: Array<String>) {

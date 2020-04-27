@@ -45,6 +45,7 @@ data class EventRow(
 //        @Column("ids") val ids: Array<Any>? = null,
         @Column("labels") val labels: String? = null,
         @Column("ids") val ids: String? = null,
+        @Column("ids_cnt") val ids_cnt: Long = 0,
         @JsonFormat(pattern="yyyy-MM-dd")
         @Column("edate") val edate: LocalDate? = null,
         @JsonFormat(pattern="HH:mm:ss")
