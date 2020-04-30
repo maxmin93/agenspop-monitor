@@ -57,6 +57,16 @@ class EventAggHandler(@Autowired val service: EventAggService) {
         }
     }
 
+    suspend fun findByQid(request: ServerRequest): ServerResponse {
+        val id = request.pathVariable("qid").toLongOrNull()
+        return if (id == null) {
+            ServerResponse.badRequest().json().bodyValueAndAwait(ErrorMessage("`qid` must be numeric"))
+        } else {
+            val rows = service.findByQid(id)
+            ServerResponse.ok().json().bodyAndAwait(rows)
+        }
+    }
+
     suspend fun findOne(request: ServerRequest): ServerResponse {
         val id = request.pathVariable("id").toLongOrNull()
         return if (id == null) {

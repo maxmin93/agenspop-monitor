@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS event_qry(
     delete_yn BOOLEAN NOT NULL DEFAULT FALSE,
     active_yn BOOLEAN NOT NULL DEFAULT TRUE,
     datasource VARCHAR(100) NOT NULL,               -- datasource
+    name VARCHAR(1000) NOT NULL,                    -- name
     query VARCHAR(2000) NOT NULL,                   -- gremlin query
     cr_date DATE DEFAULT CURRENT_DATE(),            -- create date
     up_date DATE DEFAULT CURRENT_DATE()             -- update date

@@ -15,7 +15,7 @@ interface EventQryRepository : ReactiveCrudRepository<EventQry, Long> {
     @Query("SELECT q.* FROM event_qry q WHERE q.id = :qid and q.delete_yn = false")
     fun findByQid(qid: Long): Mono<EventQry?>
 
-    @Query("SELECT q.* FROM event_qry q WHERE q.delete_yn = false")
+    @Query("SELECT q.* FROM event_qry q WHERE q.delete_yn = false order by q.id")
     fun findAllNotDeleted(): Flux<EventQry>
 
     @Query("SELECT q.* FROM event_qry q WHERE q.datasource = :datasource and q.delete_yn = false")
@@ -52,12 +52,12 @@ interface EventRowRepository : ReactiveCrudRepository<EventRow, Long> {
 
 interface EventAggRepository : ReactiveCrudRepository<EventAgg, Long> {
 
-    @Query("SELECT s.* FROM event_stat s WHERE s.qid = :qid order by id")
+    @Query("SELECT s.* FROM event_agg s WHERE s.qid = :qid order by id")
     fun findByQid(qid: Long): Flux<EventAgg>
 
-    @Query("SELECT s.* FROM event_stat s WHERE s.edate between :from and :to")
+    @Query("SELECT s.* FROM event_agg s WHERE s.edate between :from and :to")
     fun findAllByDateTerms(from: LocalDate, to: LocalDate? = LocalDate.now()): Flux<EventAgg>
 
-    @Query("SELECT s.* FROM event_stat s, event_qry q WHERE q.datasource = :datasource and q.id = s.qid order by s.edate, r.id")
+    @Query("SELECT s.* FROM event_agg s, event_qry q WHERE q.datasource = :datasource and q.id = s.qid order by s.edate, r.id")
     fun findAllByDatasource(datasource: String): Flux<EventAgg>
 }

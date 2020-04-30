@@ -31,16 +31,16 @@ CREATE TABLE IF NOT EXISTS event_qry(
 */
 
 truncate table event_qry;
-insert into event_qry(datasource, query) values
-('modern','g.V().hasLabel("person")'),
-('modern','g.E().hasLabel("created")'),
-('northwind','g.V().hasLabel("customer")'),
-('northwind','g.V().hasLabel("product")'),
-('northwind','g.V().hasLabel("order")'),
-('northwind','g.E().hasLabel("purchased")'),
-('northwind','g.E().hasLabel("sold")'),
-('airroutes','g.V().hasLabel("airport")'),
-('airroutes','g.E().hasLabel("route")');
+insert into event_qry(datasource, name, query) values
+('modern', 'new person', 'g.V().hasLabel("person")'),
+('modern', 'EDGE: created', 'g.E().hasLabel("created")'),
+('northwind', 'new customer', 'g.V().hasLabel("customer")'),
+('northwind', 'new product', 'g.V().hasLabel("product")'),
+('northwind', 'new order', 'g.V().hasLabel("order")'),
+('northwind', 'new purchased', 'g.E().hasLabel("purchased")'),
+('northwind', 'EDGE: sold', 'g.E().hasLabel("sold")'),
+('airroutes', 'new airport', 'g.V().hasLabel("airport")'),
+('airroutes', 'EDGE: route', 'g.E().hasLabel("route")');
 
 -- select * from event_qry;
 

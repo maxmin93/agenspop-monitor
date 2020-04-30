@@ -1,14 +1,29 @@
 <app-page-title [heading]="heading" [subheading]="subheading" [icon]="icon"></app-page-title>
 
 <div class="mb-3 card">
+
   <div class="card-header-tab card-header">
     <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
       <i class="header-icon lnr-charts icon-gradient bg-happy-green"> </i>
-      Portfolio Performance
+      Query #101
     </div>
   </div>
-  <div class="no-gutters row">
+  <div class="no-gutters row" >
     <!-- time-series chart -->
-    <div id="chartdiv" style="width: 100%; height: 500px"></div>
+    <div id="chartdiv" style="width: 100%; height: 300px"></div>
   </div>
 </div>
+
+
+<!-- ========================================= -->
+
+<div class="main-card mb-3 card">
+  <div class="card-header">
+    <div class="card-header-title font-size-lg text-capitalize font-weight-normal">Graph</div>
+  </div>
+  <div class="no-gutters row" >
+    <!-- canvas for cytoscape.js -->
+    <div id="cy" style="width: 100%; height: 500px"></div>
+  </div>
+</div>
+

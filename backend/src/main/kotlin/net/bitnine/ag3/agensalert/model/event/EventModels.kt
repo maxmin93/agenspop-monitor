@@ -18,6 +18,7 @@ data class EventQry(
         @Column("delete_yn") val delete_yn: Boolean,
         @Column("active_yn") val active_yn: Boolean,
         @Column("datasource") val datasource: String,
+        @Column("name") val name: String,
         @Column("query") val query: String,                 // cannot be modified, only insert
         @JsonFormat(pattern="yyyy-MM-dd")
         @Column("cr_date") val cr_date: LocalDate? = null,

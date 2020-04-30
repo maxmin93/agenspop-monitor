@@ -20,7 +20,7 @@ class EventQryHandler(@Autowired val service: EventQryService) {
     }
 
     suspend fun findAll(request: ServerRequest): ServerResponse {
-        val rows = service.findAll()
+        val rows = service.findAllNotDeleted()
         return ServerResponse.ok().json().bodyAndAwait(rows)
     }
 

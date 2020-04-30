@@ -25,7 +25,7 @@ class ScheduleTasks(@Autowired val monitorProperties: MonitorProperties) {
      * take a cron like syntax.
      * See https://docs.spring.io/spring/docs/current/javadoc-api/org/springframework/scheduling/support/CronSequenceGenerator.html
      */
-    @Scheduled(cron="0 */2 * * * ?")    //  매 1분마다 (cron 에서는 initialDelay 안됨)
+    @Scheduled(cron="0 5 16 * * ?")    //  매 1분마다 (cron 에서는 initialDelay 안됨)
     // (fixedRate = 5000, initialDelay = 2000)    // 2초 후, 5초 간격 (5초 마다는 fixedDelay)
     fun reportCurrMinute(){
         val currDateTime = LocalDateTime.now()

@@ -4,19 +4,19 @@ import net.bitnine.ag3.agensalert.model.event.EventAggHandler
 import net.bitnine.ag3.agensalert.model.event.EventQryHandler
 import net.bitnine.ag3.agensalert.model.event.EventRowHandler
 import net.bitnine.ag3.agensalert.model.user.UserHandler
-import org.h2.tools.Server
+
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
-import org.springframework.web.cors.CorsConfiguration
-import org.springframework.web.cors.reactive.CorsWebFilter
-import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 import org.springframework.web.reactive.function.server.coRouter
-import java.sql.SQLException
 
-
-
-
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
+import org.springframework.stereotype.Component
+import org.springframework.web.server.ServerWebExchange
+import org.springframework.web.server.WebFilter
+import org.springframework.web.server.WebFilterChain
+import reactor.core.publisher.Mono
 
 @Configuration
 @EnableR2dbcRepositories
@@ -66,6 +66,7 @@ class WebConfiguration {
         GET("/aggs/hello", aggHandler::hello)
         GET("/aggs", aggHandler::findAll)
         GET("/aggs/search", aggHandler::search)
+        GET("/aggs/qid/{qid}", aggHandler::findByQid)
         GET("/aggs/{id}", aggHandler::findOne)
         POST("/aggs", aggHandler::addOne)
         PUT("/aggs/{id}", aggHandler::updateOne)
@@ -73,22 +74,25 @@ class WebConfiguration {
     }
 }
 
-@Bean
-fun corsFilter(): CorsWebFilter {
 
-    val config = CorsConfiguration()
-
-    // Possibly...
-    // config.applyPermitDefaultValues()
-
-    config.allowCredentials = true
-    config.addAllowedOrigin("*")            // ("https://domain1.com")
-    config.addAllowedHeader("*")
-    config.addAllowedMethod("*")
-
-    val source = UrlBasedCorsConfigurationSource().apply {
-        registerCorsConfiguration("/**", config)
+@Component
+class CorsFilter : WebFilter {
+    // Mono<Void> filter(ServerWebExchange var1, WebFilterChain var2);
+    override fun filter(ctx: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
+        if (ctx != null) {
+            ctx.response.headers.add("Access-Control-Allow-Origin", "*")
+            ctx.response.headers.add("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
+            ctx.response.headers.add("Access-Control-Allow-Headers", "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range")
+            if (ctx.request.method == HttpMethod.OPTIONS) {
+                ctx.response.headers.add("Access-Control-Max-Age", "1728000")
+                ctx.response.statusCode = HttpStatus.NO_CONTENT
+                return Mono.empty()
+            } else {
+                ctx.response.headers.add("Access-Control-Expose-Headers", "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range")
+                return chain?.filter(ctx) ?: Mono.empty()
+            }
+        } else {
+            return chain?.filter(ctx) ?: Mono.empty()
+        }
     }
-    return CorsWebFilter(source)
 }
-

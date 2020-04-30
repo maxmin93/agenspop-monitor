@@ -13,6 +13,8 @@ import java.time.LocalDate
 class EventQryService(private val repo: EventQryRepository) {
 
     suspend fun findAll() = repo.findAll().asFlow()
+    suspend fun findAllNotDeleted() = repo.findAllNotDeleted().asFlow()
+
     suspend fun findById(id: Long) = repo.findById(id).awaitFirstOrNull()
     suspend fun findByQid(qid: Long) = repo.findByQid(qid).awaitFirstOrNull()
     suspend fun findByDatasource(datasource: String) = repo.findByDatasource(datasource).asFlow()
@@ -74,7 +76,7 @@ class EventAggService(private val repo: EventAggRepository) {
     suspend fun findAll() = repo.findAll().asFlow()
     suspend fun findById(id: Long) = repo.findById(id).awaitFirstOrNull()
 
-    suspend fun findByQid(qid: Long) = repo.findByQid(qid).awaitFirstOrNull()
+    suspend fun findByQid(qid: Long) = repo.findByQid(qid).asFlow()
     suspend fun findByDateTerms(from: LocalDate, to: LocalDate?): Flow<EventAgg> {
         return repo.findAllByDateTerms(from, to).asFlow()
     }

@@ -1,34 +1,31 @@
 package net.bitnine.ag3.agensalert.config
 
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectWriter
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import net.bitnine.ag3.agensalert.model.employee.EmployeeRepository
+import io.r2dbc.spi.Connection
+import io.r2dbc.spi.ConnectionFactory
 import net.bitnine.ag3.agensalert.model.employee.Employee
-import net.bitnine.ag3.agensalert.model.event.EleType
+import net.bitnine.ag3.agensalert.model.employee.EmployeeRepository
+import net.bitnine.ag3.agensalert.model.event.EventQry
 import net.bitnine.ag3.agensalert.model.event.EventQryRepository
 import net.bitnine.ag3.agensalert.model.event.EventRow
 import net.bitnine.ag3.agensalert.model.event.EventRowRepository
-
+import org.reactivestreams.Publisher
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.Bean
-import org.springframework.data.annotation.Id
 import org.springframework.data.r2dbc.core.DatabaseClient
-import org.springframework.data.relational.core.mapping.Column
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
-import reactor.kotlin.core.publisher.toFlux
-import java.sql.Timestamp
+import reactor.core.publisher.Mono
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
-import java.util.*
 import java.util.stream.Stream
 import kotlin.random.Random
-import kotlin.ranges.rangeTo as rangeTo
+
 
 @Component
-class DbConfig {
+class DbConfig(@Autowired val connectionFactory: ConnectionFactory) {
 
     @Bean
     fun initEmpoyee(employeeRepository: EmployeeRepository, db: DatabaseClient) = ApplicationRunner {
@@ -139,5 +136,26 @@ order by edate, qid, type
                 return value
             }
         }
+    }
+
+    @Bean
+    fun initConnTest(connectionFactory: ConnectionFactory) = ApplicationRunner {
+
+        // **NOTE :
+        // https://www.baeldung.com/r2dbc
+
+        Mono.from(connectionFactory.create())
+                .flatMap{ c ->
+                    Mono.from(c
+                        .createStatement("select * from event_row where id = $1")
+                        .bind("$1", 101)
+                        .execute()
+                    )
+                    .doFinally{ st ->       // st: SignalType
+                        c?.close()
+                        println("** close: initEventsList")
+                    }
+                }
+
     }
 }
