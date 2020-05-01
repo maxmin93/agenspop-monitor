@@ -24,6 +24,14 @@ export class AmApiService {
     return this._http.get<any>( uri, { headers : headers });
   }
 
+  // queries
+  // http://localhost:8080/queries
+  public findQuery(qid:number) {
+    let uri = this.apiUrl+'/queries/'+qid;
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    return this._http.get<any>( uri, { headers : headers });
+  }
+
   // aggregations
   // http://localhost:8080/aggs
   public findAggregations() {

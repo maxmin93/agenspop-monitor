@@ -2,8 +2,10 @@ import { Component, AfterViewInit, NgZone } from '@angular/core';
 import { Observable, of, Subject, timer, forkJoin } from 'rxjs';
 import { catchError, map, tap, debounceTime  } from 'rxjs/operators';
 
+import {NgbModal, ModalDismissReasons} from '@ng-bootstrap/ng-bootstrap';
+
 import { AmApiService } from '../../services/am-api.service';
-import { IQueries, IAggregations } from '../../services/agens-event-types';
+import { IQuery, IAggregation } from '../../services/agens-event-types';
 import { DATE_UTILS } from '../../services/agens-util-funcs';
 import * as _ from 'lodash';
 
@@ -27,8 +29,8 @@ export class MonitorListComponent implements AfterViewInit {
   page = 1;
   pageSize = 5;
 
-  queries:IQueries[] = [];
-  aggregations:IAggregations[] = [];
+  queries:IQuery[] = [];
+  aggregations:IAggregation[] = [];
 
   chartData = {
     data: [],
@@ -44,9 +46,36 @@ export class MonitorListComponent implements AfterViewInit {
 
   constructor(
     private amApiService: AmApiService,
+    private modalService: NgbModal,
     private zone: NgZone
   ) { }
 
+  ngAfterViewInit() {
+    let queries$ = this.amApiService.findQueries();
+    queries$.pipe(map(q=><IQuery[]>q)).subscribe(rows => {
+      // console.log('queries =>', rows);
+      this.queries = rows;
+    });
+
+    let aggregations$ = this.amApiService.findAggregations();
+    aggregations$.pipe(map(q=><IAggregation[]>q)).subscribe(rows => {
+      this.aggregations = _.sortBy(rows, ['edate','qid']);
+      // console.log('aggregations =>', this.aggregations);
+      this.chartData = this.makeChartData(this.aggregations);
+
+      this.zone.runOutsideAngular(() =>{
+        this.chart = this.initChart(this.chartData);
+      });
+    });
+  }
+
+  ngOnDestroy() {
+    this.zone.runOutsideAngular(() => {
+      if (this.chart) {
+        this.chart.dispose();
+      }
+    });
+  }
 
 /*
 Data format for XYChart
@@ -58,7 +87,7 @@ date : Date
 total : sum of all ids_cnt
 */
 
-  makeChartData(sorted: IAggregations[]): any {
+  makeChartData(sorted: IAggregation[]): any {
     let chartData : any = {};
     if( _.isNull(sorted) || sorted.length == 0 ) return chartData;
 
@@ -211,31 +240,27 @@ total : sum of all ids_cnt
     return chart;
   }
 
-  ngAfterViewInit() {
-    let queries$ = this.amApiService.findQueries();
-    queries$.pipe(map(q=><IQueries[]>q)).subscribe(rows => {
-      // console.log('queries =>', rows);
-      this.queries = rows;
-    });
 
-    let aggregations$ = this.amApiService.findAggregations();
-    aggregations$.pipe(map(q=><IAggregations[]>q)).subscribe(rows => {
-      this.aggregations = _.sortBy(rows, ['edate','qid']);
-      // console.log('aggregations =>', this.aggregations);
-      this.chartData = this.makeChartData(this.aggregations);
+  /////////////////////////////////////////////////////////////////////////
 
-      this.zone.runOutsideAngular(() =>{
-        this.chart = this.initChart(this.chartData);
-      });
+  closeResult: string;
+
+  openNewQuery(content){
+    this.modalService.open(content).result.then((result) => {
+      this.closeResult = `Closed with: ${result}`;
+    }, (reason) => {
+      this.closeResult = `Dismissed ${this.getDismissReason(reason)}`;
     });
   }
 
-  ngOnDestroy() {
-    this.zone.runOutsideAngular(() => {
-      if (this.chart) {
-        this.chart.dispose();
-      }
-    });
+  private getDismissReason(reason: any): string {
+    if (reason === ModalDismissReasons.ESC) {
+      return 'by pressing ESC';
+    } else if (reason === ModalDismissReasons.BACKDROP_CLICK) {
+      return 'by clicking on a backdrop';
+    } else {
+      return `with: ${reason}`;
+    }
   }
 
 }

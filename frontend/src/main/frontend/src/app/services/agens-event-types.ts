@@ -1,4 +1,4 @@
-export interface IQueries {
+export interface IQuery {
   id: number;
   datasource: string;
   name: string;
@@ -8,7 +8,7 @@ export interface IQueries {
   up_date: Date;
 };
 
-export interface IAggregations {
+export interface IAggregation {
   id: number;
   edate: Date;
   qid: number;
