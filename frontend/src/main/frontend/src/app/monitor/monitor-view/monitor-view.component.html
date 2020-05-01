@@ -1,4 +1,6 @@
-<app-page-title [heading]="heading" [subheading]="subheading" [icon]="icon"></app-page-title>
+<app-monitor-title [heading]="heading" [subheading]="subheading" [icon]="icon"
+  (refreshEmitter)="doRefresh($event)">
+</app-monitor-title>
 
 <div class="mb-3 card">
 

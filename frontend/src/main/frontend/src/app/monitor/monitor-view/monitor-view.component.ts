@@ -86,10 +86,17 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
         }
       });
     });
-
   }
 
   ngAfterViewInit() {
+    this.doInit();
+  }
+
+  ngOnDestroy() {
+    this.doDestory();
+  }
+
+  doInit(){
     let aggregations$ = this.amApiService.findAggregationsByQid(this.qid);
     aggregations$.pipe(map(q=><IAggregation[]>q)).subscribe(rows => {
       this.aggregations = _.sortBy(rows, ['edate']);
@@ -102,14 +109,18 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     });
   }
 
-  ngOnDestroy() {
+  doDestory(){
     this.zone.runOutsideAngular(() => {
-      if (this.chart) {
-        this.chart.dispose();
-      }
+      if (this.chart) this.chart.dispose();
     });
   }
 
+  doRefresh($event){
+    if( $event ){
+      this.doDestory();
+      this.doInit();
+    }
+  }
 
   /////////////////////////////////////////////////////////////////////////
 

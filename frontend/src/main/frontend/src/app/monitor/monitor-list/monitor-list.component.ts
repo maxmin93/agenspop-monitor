@@ -29,6 +29,8 @@ export class MonitorListComponent implements AfterViewInit {
   page = 1;
   pageSize = 5;
 
+  selectedQuery:IQuery = null;
+
   queries:IQuery[] = [];
   aggregations:IAggregation[] = [];
 
@@ -51,6 +53,14 @@ export class MonitorListComponent implements AfterViewInit {
   ) { }
 
   ngAfterViewInit() {
+    this.doInit();
+  }
+
+  ngOnDestroy() {
+    this.doDestory();
+  }
+
+  doInit(){
     let queries$ = this.amApiService.findQueries();
     queries$.pipe(map(q=><IQuery[]>q)).subscribe(rows => {
       // console.log('queries =>', rows);
@@ -69,12 +79,17 @@ export class MonitorListComponent implements AfterViewInit {
     });
   }
 
-  ngOnDestroy() {
+  doDestory(){
     this.zone.runOutsideAngular(() => {
-      if (this.chart) {
-        this.chart.dispose();
-      }
+      if (this.chart) this.chart.dispose();
     });
+  }
+
+  doRefresh($event){
+    if( $event ){
+      this.doDestory();
+      this.doInit();
+    }
   }
 
 /*
@@ -245,8 +260,19 @@ total : sum of all ids_cnt
 
   closeResult: string;
 
-  openNewQuery(content){
-    this.modalService.open(content).result.then((result) => {
+  openQuery($modal, item:IQuery){
+    if( !item ) return;
+
+    this.selectedQuery = item;
+    this.modalService.open($modal).result.then((result) => {
+      this.closeResult = `Closed with: ${result}`;
+    }, (reason) => {
+      this.closeResult = `Dismissed ${this.getDismissReason(reason)}`;
+    });
+  }
+
+  openNewQuery($modal){
+    this.modalService.open($modal).result.then((result) => {
       this.closeResult = `Closed with: ${result}`;
     }, (reason) => {
       this.closeResult = `Dismissed ${this.getDismissReason(reason)}`;

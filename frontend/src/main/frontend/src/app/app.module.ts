@@ -19,6 +19,7 @@ import { MonitorListComponent } from './monitor/monitor-list/monitor-list.compon
 import { MonitorViewComponent } from './monitor/monitor-view/monitor-view.component';
 import { MonitorLayoutComponent } from './monitor/monitor-layout/monitor-layout.component';
 import { MonitorMenusComponent } from './monitor/monitor-menus/monitor-menus.component';
+import { MonitorTitleComponent } from './monitor/monitor-title/monitor-title.component';
 
 // BOOTSTRAP COMPONENTS
 import {AngularFontAwesomeModule} from 'angular-font-awesome';
@@ -111,6 +112,7 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
     MonitorViewComponent,
     MonitorLayoutComponent,
     MonitorMenusComponent,
+    MonitorTitleComponent,
 
     // LAYOUT
     BaseLayoutComponent,
