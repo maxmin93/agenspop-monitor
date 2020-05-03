@@ -10,13 +10,19 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.*
+import reactor.core.publisher.Mono
 
 @Component
 class EventQryHandler(@Autowired val service: EventQryService) {
     private val logger = LoggerFactory.getLogger(EventQryHandler::class.java)
 
     suspend fun hello(request: ServerRequest): ServerResponse {
-        return ServerResponse.ok().json().bodyAndAwait(flowOf("{ \"msg\": \"Hello, EventQryHandler!\""))    //mapOf("msg" to "Hello, Spring!")))
+        return ServerResponse.ok().json().bodyAndAwait( flowOf("{ \"msg\": \"Hello, EventQryHandler!\""))    //mapOf("msg" to "Hello, Spring!")))
+    }
+
+    suspend fun findAllWithDeleted(request: ServerRequest): ServerResponse {
+        val rows = service.findAll()
+        return ServerResponse.ok().json().bodyAndAwait(rows)
     }
 
     suspend fun findAll(request: ServerRequest): ServerResponse {
@@ -49,6 +55,32 @@ class EventQryHandler(@Autowired val service: EventQryService) {
             val row = service.findById(id)
             if (row == null) ServerResponse.notFound().buildAndAwait()
             else ServerResponse.ok().json().bodyValueAndAwait(row)
+        }
+    }
+
+    suspend fun removeOne(request: ServerRequest): ServerResponse {
+        val id = request.pathVariable("id").toLongOrNull()
+        return if (id == null) {
+            ServerResponse.badRequest().json().bodyValueAndAwait(ErrorMessage("`id` must be numeric"))
+        } else {
+            val row = service.removeById(id)
+            if (row == null) ServerResponse.notFound().buildAndAwait()
+            else ServerResponse.ok().json().bodyValueAndAwait(row)
+        }
+    }
+
+    suspend fun changeStateOne(request: ServerRequest): ServerResponse {
+        val id = request.pathVariable("id").toLongOrNull()
+
+        val criterias = request.queryParams()
+        val state: Boolean? = if( criterias.contains("state") ) criterias.getFirst("state")?.toBoolean() else null
+
+        return if (id == null || state == null) {
+            ServerResponse.badRequest().json().bodyValueAndAwait(ErrorMessage("`id` must be numeric or `state` must be boolean"))
+        } else {
+            val row = service.changeStateById(id, state)
+            if (row == null) ServerResponse.notFound().buildAndAwait()
+            else ServerResponse.ok().json().bodyValueAndAwait( row )
         }
     }
 

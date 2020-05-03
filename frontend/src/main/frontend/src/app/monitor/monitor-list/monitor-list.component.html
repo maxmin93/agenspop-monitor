@@ -21,7 +21,7 @@
     <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
       <span style="vertical-align: middle;">Monitor List</span>
       <button type="button" class="btn-shadow d-inline-flex align-items-center btn btn-success"
-               (click)="openNewQuery(queryModal)" style="float: right">
+               (click)="openQuery(queryModal,null)" style="float: right">
         <fa class="mr-2" name="plus"></fa>
         Create New
       </button>
@@ -67,8 +67,9 @@
         <td class="text-center">
           <div role="group" class="btn-group-sm btn-group">
             <!-- <button *ngIf="item.active_yn == true" class="btn-shadow btn btn-danger">view</button> -->
-            <button *ngIf="item.active_yn == true" class="btn-shadow btn btn-danger">hold</button>
-            <button *ngIf="item.active_yn != true" class="btn-shadow btn btn-primary">resume</button>
+            <button *ngIf="item.active_yn == true" class="btn-shadow btn btn-warning" (click)="changeStateQuery(item)">hold</button>
+            <button *ngIf="item.active_yn != true" class="btn-shadow btn btn-primary" (click)="changeStateQuery(item)">resume</button>
+            <button *ngIf="item.delete_yn != true" class="btn-shadow btn btn-danger" (click)="deleteQuery(item)">remove</button>
           </div>
         </td>
       </tr>
@@ -92,28 +93,28 @@
   </div>
   <div class="modal-body">
 
-    <form>
+    <form [formGroup]="editQueryForm">
       <div class="position-relative form-group"><label for="exampleEmail">Name</label>
-        <input name="queryName" id="queryName" placeholder="description of query" type="text" class="form-control"
-          [value]="selectedQuery != null ? selectedQuery.name : ''">
+        <input name="queryName" id="queryName" type="text" class="form-control"
+               formControlName="name">
       </div>
       <div class="position-relative form-group"><label for="exampleSelect">Datasource</label>
-        <select name="queryDatasource" id="queryDatasourceSelect" class="form-control">
-          <option>1</option>
-          <option>2</option>
-          <option selected="selected">selected</option>
-          <option>4</option>
-          <option>5</option>
+        <select name="queryDatasource" id="queryDatasource" class="form-control"
+                formControlName="datasource">
+          <option>modern</option>
+          <option>northwind</option>
+          <option>airroutes</option>
         </select>
       </div>
       <div class="position-relative form-group"><label for="exampleText">Query</label>
-        <textarea name="text" id="exampleText" class="form-control">{{selectedQuery != null ? selectedQuery.query : ''}}</textarea>
+        <textarea name="text" id="exampleText" class="form-control"
+                  formControlName="query"></textarea>
       </div>
     </form>
 
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-secondary" (click)="modal.close('Close click')">Close</button>
-    <button type="button" class="btn btn-primary">Save changes</button>
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss('Close click')">Close</button>
+    <button type="submit" class="btn btn-primary" (click)="modal.close('Close click')">Save changes</button>
   </div>
 </ng-template>

@@ -2,6 +2,7 @@ package net.bitnine.ag3.agensalert.model.event
 
 import kotlinx.coroutines.flow.Flow
 import org.springframework.data.annotation.Id
+import org.springframework.data.r2dbc.repository.Modifying
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.repository.reactive.ReactiveCrudRepository
@@ -11,6 +12,18 @@ import java.time.LocalDate
 import java.util.*
 
 interface EventQryRepository : ReactiveCrudRepository<EventQry, Long> {
+
+    // **NOTE: @Modifying
+    // https://www.baeldung.com/spring-data-jpa-modifying-annotation
+    // https://github.com/spring-projects/spring-data-r2dbc/blob/master/src/main/asciidoc/reference/r2dbc-repositories.adoc#modifying-queries
+
+    @Modifying
+    @Query("UPDATE event_qry q SET q.delete_yn = true, q.up_date = CURRENT_DATE() WHERE q.id = :qid")
+    fun removeById(qid: Long): Mono<Integer?>
+
+    @Modifying
+    @Query("UPDATE event_qry q SET q.active_yn = :active_yn, q.up_date = CURRENT_DATE() WHERE q.id = :qid")
+    fun changeStateById(qid: Long, active_yn: Boolean): Mono<Integer?>
 
     @Query("SELECT q.* FROM event_qry q WHERE q.id = :qid and q.delete_yn = false")
     fun findByQid(qid: Long): Mono<EventQry?>

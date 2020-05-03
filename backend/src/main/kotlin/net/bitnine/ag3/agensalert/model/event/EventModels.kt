@@ -5,7 +5,9 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
+import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
 import java.time.LocalDate
@@ -15,15 +17,17 @@ import java.time.LocalTime
 @Table("event_qry")
 data class EventQry(
         @Id val id: Long? = null,
-        @Column("delete_yn") val delete_yn: Boolean,
-        @Column("active_yn") val active_yn: Boolean,
+        @Column("delete_yn") val delete_yn: Boolean = false,
+        @Column("active_yn") val active_yn: Boolean = false,
         @Column("datasource") val datasource: String,
         @Column("name") val name: String,
         @Column("query") val query: String,                 // cannot be modified, only insert
         @JsonFormat(pattern="yyyy-MM-dd")
+        @CreatedDate
         @Column("cr_date") val cr_date: LocalDate? = null,
         @JsonFormat(pattern="yyyy-MM-dd")
-        @Column("up_date") val up_date: LocalDate? = null   // when deactivated or deleted
+        @LastModifiedDate
+        @Column("up_date") val up_date: LocalDate? = LocalDate.now()   // when deactivated or deleted
 )
 
 // Add support for LocalDate, LocalDateTime, and LocalTime types
@@ -70,6 +74,11 @@ data class EventAgg(
 
 // rest models
 data class EventErrorMessage(val message: String)
+
+data class EventUpdateMessage(
+        val qid: Long,
+        val result: Any
+)
 
 data class EventDTO(
         val edate: LocalDate,

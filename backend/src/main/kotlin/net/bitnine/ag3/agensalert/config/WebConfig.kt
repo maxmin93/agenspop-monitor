@@ -42,12 +42,15 @@ class WebConfiguration {
     @Bean
     fun eventQryRoute(qryHandler: EventQryHandler) = coRouter {
         GET("/queries/hello", qryHandler::hello)
+        GET("/queries/all", qryHandler::findAllWithDeleted)
         GET("/queries", qryHandler::findAll)
+        GET("/queries/{id}/changeState", qryHandler::changeStateOne)
         GET("/queries/search", qryHandler::search)
         GET("/queries/{id}", qryHandler::findOne)
         POST("/queries", qryHandler::addOne)
         PUT("/queries/{id}", qryHandler::updateOne)
-        DELETE("/queries/{id}", qryHandler::deleteOne)
+        DELETE("/queries/{id}", qryHandler::removeOne)
+//        DELETE("/queries/{id}", qryHandler::deleteOne)
     }
 
     @Bean

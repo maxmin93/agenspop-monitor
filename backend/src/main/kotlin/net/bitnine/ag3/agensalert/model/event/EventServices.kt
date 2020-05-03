@@ -19,6 +19,9 @@ class EventQryService(private val repo: EventQryRepository) {
     suspend fun findByQid(qid: Long) = repo.findByQid(qid).awaitFirstOrNull()
     suspend fun findByDatasource(datasource: String) = repo.findByDatasource(datasource).asFlow()
 
+    suspend fun changeStateById(qid: Long, active_yn: Boolean) = repo.changeStateById(qid, active_yn).awaitFirstOrNull()
+    suspend fun removeById(qid: Long) = repo.removeById(qid).awaitFirstOrNull()
+
     suspend fun addOne(qry: EventQry) = repo.save(qry).awaitFirstOrNull()
     suspend fun updateOne(id: Long, qry: EventQry): EventQry? {
         val existingQry = findById(id)

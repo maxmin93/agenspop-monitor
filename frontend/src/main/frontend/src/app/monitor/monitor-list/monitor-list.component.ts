@@ -1,4 +1,5 @@
 import { Component, AfterViewInit, NgZone } from '@angular/core';
+import { FormGroup, FormBuilder } from '@angular/forms';
 import { Observable, of, Subject, timer, forkJoin } from 'rxjs';
 import { catchError, map, tap, debounceTime  } from 'rxjs/operators';
 
@@ -12,6 +13,7 @@ import * as _ from 'lodash';
 import * as am4core from "@amcharts/amcharts4/core";
 import * as am4charts from "@amcharts/amcharts4/charts";
 import am4themes_animated from "@amcharts/amcharts4/themes/animated";
+import { isInteger } from '@ng-bootstrap/ng-bootstrap/util/util';
 
 am4core.useTheme(am4themes_animated);
 
@@ -30,6 +32,7 @@ export class MonitorListComponent implements AfterViewInit {
   pageSize = 5;
 
   selectedQuery:IQuery = null;
+  editQueryForm: FormGroup;
 
   queries:IQuery[] = [];
   aggregations:IAggregation[] = [];
@@ -48,11 +51,20 @@ export class MonitorListComponent implements AfterViewInit {
 
   constructor(
     private amApiService: AmApiService,
+    private fb: FormBuilder,
     private modalService: NgbModal,
     private zone: NgZone
   ) { }
 
   ngAfterViewInit() {
+    this.editQueryForm = this.fb.group({
+      id: null,
+      active_yn: false,
+      name: '',
+      datasource: '',
+      query: ''
+    });
+
     this.doInit();
   }
 
@@ -258,24 +270,77 @@ total : sum of all ids_cnt
 
   /////////////////////////////////////////////////////////////////////////
 
-  closeResult: string;
+  // closeResult: string;
 
-  openQuery($modal, item:IQuery){
-    if( !item ) return;
+  deleteQuery(item:IQuery){
+    let idx = _.findIndex(this.queries, q=>q.id == item.id);
+    if (confirm(`Are you sure to remove query #${item.id} "${item.name}"?`)) {
+      this.amApiService.deleteQuery(item.id).subscribe(r=>{
+        console.log('deleted:', r);
+        // remove query by index on array
+        if( r > 0 ) this.queries.splice(idx,1);
+      });
+    }
+  }
 
-    this.selectedQuery = item;
-    this.modalService.open($modal).result.then((result) => {
-      this.closeResult = `Closed with: ${result}`;
-    }, (reason) => {
-      this.closeResult = `Dismissed ${this.getDismissReason(reason)}`;
+  changeStateQuery(item:IQuery){
+    let state = !item.active_yn;
+    this.amApiService.changeStateQuery(item.id, state).subscribe(r=>{
+      console.log(`changeStatus[active]: ${item.active_yn} to ${state} => ${r}`);
+      if( Number.parseInt(r) > 0 ){
+        item.active_yn = state;
+        item.up_date = new Date();
+      }
     });
   }
 
-  openNewQuery($modal){
+  openQuery($modal, item:IQuery){
+    this.selectedQuery = item;
+    if( item ){   // edit query
+      this.editQueryForm.patchValue({
+        id: item.id,
+        active_yn: item.active_yn,
+        name: item.name,
+        datasource: item.datasource,
+        query: item.query
+      });
+    }
+    else{         // new query
+      this.editQueryForm.patchValue({
+        id: null,
+        active_yn: false,
+        name: '',
+        datasource: '',
+        query: ''
+      });
+    }
+
     this.modalService.open($modal).result.then((result) => {
-      this.closeResult = `Closed with: ${result}`;
+      let formData = this.editQueryForm.getRawValue();
+      // this.closeResult = `Closed with: ${result}`;
+      // console.log(this.closeResult, formData);
+      if( item ){   // update query
+        this.amApiService.updateQuery(<IQuery>formData)
+          .subscribe(r=>{
+            console.log('updateQuery:', r);
+            if( !r['cr_date'] ) r['cr_date'] = r['up_date'];
+            // update queries with finding qid
+            let idx = _.findIndex(this.queries, q=>q.id == item.id);
+            this.queries[idx] = _.clone(r);
+          });
+      }
+      else{
+        this.amApiService.addQuery(<IQuery>formData)
+          .subscribe(r=>{
+            console.log('addQuery:', r);
+            // append new query to queries
+            if( !r['cr_date'] ) r['cr_date'] = r['up_date'];
+            this.queries.push(<IQuery>r);
+          });
+      }
     }, (reason) => {
-      this.closeResult = `Dismissed ${this.getDismissReason(reason)}`;
+      // this.closeResult = `Dismissed ${this.getDismissReason(reason)}`;
+      // console.log(this.closeResult);
     });
   }
 
