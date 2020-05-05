@@ -42,4 +42,11 @@ class AgenspopClient(private val webClient: WebClient){
                     .retrieve()
                     .bodyToFlux(Map::class.java)
 
+    fun execGremlin(datasource:String, script:String) =
+            webClient.post()
+                    .uri("/graph/gremlin")
+                    .body(Mono.just(mapOf("datasource" to datasource, "q" to script)), Map::class.java)
+                    .retrieve()
+                    .bodyToFlux(Map::class.java)
+
 }

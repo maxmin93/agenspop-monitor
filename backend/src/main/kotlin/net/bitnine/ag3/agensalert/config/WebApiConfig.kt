@@ -51,6 +51,7 @@ class WebApiConfiguration {
         GET("/agens/vertices", agenspopHandler::findVertices)
         GET("/agens/edges", agenspopHandler::findEdges)
         GET("/agens/elements", agenspopHandler::findElements)
+        POST("/agens/gremlin", agenspopHandler::execGremlin)
     }
 
     @Bean

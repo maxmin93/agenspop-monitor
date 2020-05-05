@@ -26,4 +26,7 @@ class AgenspopService(private val client: AgenspopClient){
     suspend fun findElements(datasource:String, ids: List<String>) =
             Flux.concat( client.findVertices(datasource, ids), client.findEdges(datasource, ids) ).asFlow()
 
+    suspend fun execGremlin(datasource:String, script: String) =
+            client.execGremlin(datasource, script).asFlow()
+
 }

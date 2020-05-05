@@ -1,6 +1,8 @@
 package net.bitnine.ag3.agensalert.gremlin
 
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.reactive.awaitFirstOrNull
+import net.bitnine.ag3.agensalert.model.event.EventQry
 import net.bitnine.ag3.agensalert.model.user.ErrorMessage
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -150,6 +152,30 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
             }
             else -> ServerResponse.badRequest().json()
                     .bodyValueAndAwait(ErrorMessage("Incorrect search criteria"))
+        }
+    }
+
+    suspend fun execGremlin(request: ServerRequest): ServerResponse {
+        val params = try {
+            request.bodyToMono<Map<String,String>>().awaitFirstOrNull()
+        } catch (e: Exception) {
+            logger.error("Decoding body error", e)
+            null
+        }
+        return if (params == null) {
+            ServerResponse.badRequest().json()
+                    .bodyValueAndAwait(ErrorMessage("Search must have query params"))
+        } else {
+            val datasource = params.get("datasource")
+            val script = params.get("q")
+            if (datasource.isNullOrBlank() || script.isNullOrBlank()) {
+                ServerResponse.badRequest().json()
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                                +"datasource, q"))
+            } else {
+                ServerResponse.ok().json()
+                        .bodyAndAwait(service.execGremlin(datasource,script)!!)
+            }
         }
     }
 
