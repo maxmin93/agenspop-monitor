@@ -3,6 +3,7 @@ package net.bitnine.ag3.agensalert.gremlin
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Flux
 
 @Service
 class AgenspopService(private val client: AgenspopClient){
@@ -21,5 +22,8 @@ class AgenspopService(private val client: AgenspopClient){
 
     suspend fun findEdges(datasource:String, ids: List<String>) =
             client.findEdges(datasource, ids).asFlow()
-    
+
+    suspend fun findElements(datasource:String, ids: List<String>) =
+            Flux.concat( client.findVertices(datasource, ids), client.findEdges(datasource, ids) ).asFlow()
+
 }

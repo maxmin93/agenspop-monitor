@@ -46,6 +46,11 @@ class WebApiConfiguration {
     fun agenspopRoute(agenspopHandler: AgenspopHandler) = coRouter {
         GET("/agens/hello", agenspopHandler::hello)
         GET("/agens/datasources", agenspopHandler::findDatasources)
+        GET("/agens/connected_edges", agenspopHandler::findConnectedEdges)
+        GET("/agens/neighbors", agenspopHandler::findNeighbors)
+        GET("/agens/vertices", agenspopHandler::findVertices)
+        GET("/agens/edges", agenspopHandler::findEdges)
+        GET("/agens/elements", agenspopHandler::findElements)
     }
 
     @Bean
