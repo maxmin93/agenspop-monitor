@@ -1,18 +1,18 @@
 package net.bitnine.ag3.agensalert.config
 
+import net.bitnine.ag3.agensalert.gremlin.AgenspopHandler
 import net.bitnine.ag3.agensalert.model.event.EventAggHandler
 import net.bitnine.ag3.agensalert.model.event.EventQryHandler
 import net.bitnine.ag3.agensalert.model.event.EventRowHandler
 import net.bitnine.ag3.agensalert.model.user.UserHandler
-
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
-import org.springframework.web.reactive.function.server.coRouter
-
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.server.coRouter
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilter
 import org.springframework.web.server.WebFilterChain
@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono
 
 @Configuration
 @EnableR2dbcRepositories
-class WebConfiguration {
+class WebApiConfiguration {
 
 //    @Bean(initMethod = "start", destroyMethod = "stop")
 //    @Throws(SQLException::class)
@@ -37,6 +37,15 @@ class WebConfiguration {
         POST("/users", userHandler::addUser)
         PUT("/users/{id}", userHandler::updateUser)
         DELETE("/users/{id}", userHandler::deleteUser)
+    }
+
+// **NOTE : webflux-functional
+// https://github.com/spring-projects/spring-framework/blob/master/src/docs/asciidoc/web/webflux-functional.adoc#serverresponse
+
+    @Bean
+    fun agenspopRoute(agenspopHandler: AgenspopHandler) = coRouter {
+        GET("/agens/hello", agenspopHandler::hello)
+        GET("/agens/datasources", agenspopHandler::findDatasources)
     }
 
     @Bean
@@ -84,7 +93,7 @@ class CorsFilter : WebFilter {
     override fun filter(ctx: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
         if (ctx != null) {
             ctx.response.headers.add("Access-Control-Allow-Origin", "*")
-            ctx.response.headers.add("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
+            ctx.response.headers.add("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE")
             ctx.response.headers.add("Access-Control-Allow-Headers", "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range")
             if (ctx.request.method == HttpMethod.OPTIONS) {
                 ctx.response.headers.add("Access-Control-Max-Age", "1728000")

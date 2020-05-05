@@ -13,7 +13,7 @@ const TIMEOUT_LIMIT:number = 9999;
 export class AmApiService {
 
   // apiUrl = `${window.location.protocol}//${window.location.host}`;
-  apiUrl = `http://localhost:8080`;
+  apiUrl = `http://localhost:8082`;
 
   constructor(private _http: HttpClient) { }
 

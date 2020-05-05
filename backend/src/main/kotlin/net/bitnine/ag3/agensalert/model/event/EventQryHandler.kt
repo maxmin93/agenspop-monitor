@@ -16,18 +16,28 @@ import reactor.core.publisher.Mono
 class EventQryHandler(@Autowired val service: EventQryService) {
     private val logger = LoggerFactory.getLogger(EventQryHandler::class.java)
 
+    // **NOTE: SameSite=Lax Warning message
+    // => Chrome 80 버전부터 반영.
+    // https://yangbongsoo.gitbook.io/study/cookie-samesite
+
     suspend fun hello(request: ServerRequest): ServerResponse {
-        return ServerResponse.ok().json().bodyAndAwait( flowOf("{ \"msg\": \"Hello, EventQryHandler!\""))    //mapOf("msg" to "Hello, Spring!")))
+        return ServerResponse.ok()
+                .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                .json().bodyAndAwait( flowOf("{ \"msg\": \"Hello, EventQryHandler!\""))    //mapOf("msg" to "Hello, Spring!")))
     }
 
     suspend fun findAllWithDeleted(request: ServerRequest): ServerResponse {
         val rows = service.findAll()
-        return ServerResponse.ok().json().bodyAndAwait(rows)
+        return ServerResponse.ok()
+                .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                .json().bodyAndAwait(rows)
     }
 
     suspend fun findAll(request: ServerRequest): ServerResponse {
         val rows = service.findAllNotDeleted()
-        return ServerResponse.ok().json().bodyAndAwait(rows)
+        return ServerResponse.ok()
+                .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                .json().bodyAndAwait(rows)
     }
 
     // by datasource
@@ -40,7 +50,9 @@ class EventQryHandler(@Autowired val service: EventQryService) {
                 if (criteriaValue.isNullOrBlank()) {
                     ServerResponse.badRequest().json().bodyValueAndAwait(ErrorMessage("Incorrect search criteria value"))
                 } else {
-                    ServerResponse.ok().json().bodyAndAwait(service.findByDatasource(criteriaValue))
+                    ServerResponse.ok()
+                            .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                            .json().bodyAndAwait(service.findByDatasource(criteriaValue))
                 }
             }
             else -> ServerResponse.badRequest().json().bodyValueAndAwait(ErrorMessage("Incorrect search criteria"))
@@ -54,7 +66,9 @@ class EventQryHandler(@Autowired val service: EventQryService) {
         } else {
             val row = service.findById(id)
             if (row == null) ServerResponse.notFound().buildAndAwait()
-            else ServerResponse.ok().json().bodyValueAndAwait(row)
+            else ServerResponse.ok()
+                    .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                    .json().bodyValueAndAwait(row)
         }
     }
 
@@ -65,7 +79,9 @@ class EventQryHandler(@Autowired val service: EventQryService) {
         } else {
             val row = service.removeById(id)
             if (row == null) ServerResponse.notFound().buildAndAwait()
-            else ServerResponse.ok().json().bodyValueAndAwait(row)
+            else ServerResponse.ok()
+                    .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                    .json().bodyValueAndAwait(row)
         }
     }
 
@@ -80,7 +96,9 @@ class EventQryHandler(@Autowired val service: EventQryService) {
         } else {
             val row = service.changeStateById(id, state)
             if (row == null) ServerResponse.notFound().buildAndAwait()
-            else ServerResponse.ok().json().bodyValueAndAwait( row )
+            else ServerResponse.ok()
+                    .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                    .json().bodyValueAndAwait( row )
         }
     }
 
@@ -96,7 +114,9 @@ class EventQryHandler(@Autowired val service: EventQryService) {
         } else {
             val row = service.addOne(newRow)
             if (row == null) ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).json().bodyValueAndAwait(ErrorMessage("Internal error"))
-            else ServerResponse.status(HttpStatus.CREATED).json().bodyValueAndAwait(row)
+            else ServerResponse.status(HttpStatus.CREATED)
+                    .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                    .json().bodyValueAndAwait(row)
         }
     }
 
@@ -116,7 +136,9 @@ class EventQryHandler(@Autowired val service: EventQryService) {
             } else {
                 val row = service.updateOne(id, updateRow)
                 if (row == null) ServerResponse.status(HttpStatus.NOT_FOUND).json().bodyValueAndAwait(ErrorMessage("Resource $id not found"))
-                else ServerResponse.status(HttpStatus.OK).json().bodyValueAndAwait(row)
+                else ServerResponse.status(HttpStatus.OK)
+                        .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                        .json().bodyValueAndAwait(row)
             }
         }
     }
@@ -127,7 +149,9 @@ class EventQryHandler(@Autowired val service: EventQryService) {
             ServerResponse.badRequest().json().bodyValueAndAwait(ErrorMessage("`id` must be numeric"))
         } else {
             if (service.deleteOne(id)) ServerResponse.noContent().buildAndAwait()
-            else ServerResponse.status(HttpStatus.NOT_FOUND).json().bodyValueAndAwait(ErrorMessage("Resource $id not found"))
+            else ServerResponse.status(HttpStatus.NOT_FOUND)
+                    .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                    .json().bodyValueAndAwait(ErrorMessage("Resource $id not found"))
         }
     }
 }
