@@ -65,14 +65,14 @@ export class MonitorListComponent implements AfterViewInit {
       query: ''
     });
 
-    this.doInit();
+    this.doInitChart();
   }
 
   ngOnDestroy() {
-    this.doDestory();
+    this.doDestoryChart();
   }
 
-  doInit(){
+  doInitChart(){
     let queries$ = this.amApiService.findQueries();
     queries$.pipe(map(q=><IQuery[]>q)).subscribe(rows => {
       // console.log('queries =>', rows);
@@ -91,7 +91,7 @@ export class MonitorListComponent implements AfterViewInit {
     });
   }
 
-  doDestory(){
+  doDestoryChart(){
     this.zone.runOutsideAngular(() => {
       if (this.chart) this.chart.dispose();
     });
@@ -99,8 +99,8 @@ export class MonitorListComponent implements AfterViewInit {
 
   doRefresh($event){
     if( $event ){
-      this.doDestory();
-      this.doInit();
+      this.doDestoryChart();
+      this.doInitChart();
     }
   }
 

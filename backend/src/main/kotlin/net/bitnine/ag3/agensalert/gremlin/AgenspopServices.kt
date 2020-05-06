@@ -14,8 +14,11 @@ class AgenspopService(private val client: AgenspopClient){
     suspend fun findNeighbors(datasource:String, vid:String) =
             client.findNeighbors(datasource, vid).awaitFirstOrNull()
 
-    suspend fun findConnectedEdges(datasource:String, vids: List<String>) =
-            client.findConnectedEdges(datasource, vids).asFlow()
+    suspend fun findConnectedEdges(datasource:String, ids: List<String>) =
+            client.findConnectedEdges(datasource, ids).asFlow()
+
+    suspend fun findConnectedVertices(datasource:String, ids: List<String>) =
+            client.findConnectedVertices(datasource, ids).asFlow()
 
     suspend fun findVertices(datasource:String, ids: List<String>) =
             client.findVertices(datasource, ids).asFlow()

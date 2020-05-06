@@ -29,11 +29,15 @@
             ],
             "styles": [
               "src/styles.scss",
-              "./node_modules/font-awesome/scss/font-awesome.scss"
+              "node_modules/font-awesome/scss/font-awesome.scss",
+              "node_modules/tippy.js/index.css"
             ],
             "scripts": [
               "node_modules/cytoscape/dist/cytoscape.min.js",
-              "node_modules/cytoscape-euler/cytoscape-euler.js"
+              "node_modules/cytoscape-euler/cytoscape-euler.js",
+              "node_modules/popper.js/dist/umd/popper.min.js",
+              "node_modules/cytoscape-popper/cytoscape-popper.js",
+              "node_modules/tippy.js/umd/index.all.min.js"
             ]
           },
           "configurations": {
@@ -92,13 +96,18 @@
               "src/assets"
             ],
             "styles": [
-              "./node_modules/bootstrap/dist/css/bootstrap.min.css",
-              "./node_modules/ngx-bootstrap/datepicker/bs-datepicker.css",
-              "src/styles.scss"
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/ngx-bootstrap/datepicker/bs-datepicker.css",
+              "src/styles.scss",
+              "node_modules/font-awesome/scss/font-awesome.scss",
+              "node_modules/tippy.js/index.css"
             ],
             "scripts": [
               "node_modules/cytoscape/dist/cytoscape.min.js",
-              "node_modules/cytoscape-euler/cytoscape-euler.js"
+              "node_modules/cytoscape-euler/cytoscape-euler.js",
+              "node_modules/popper.js/dist/umd/popper.min.js",
+              "node_modules/cytoscape-popper/cytoscape-popper.js",
+              "node_modules/tippy.js/umd/index.all.min.js"
             ]
           }
         },

@@ -9,7 +9,10 @@ export const EMPTY_GRAPH:IGraph = {
 
 export interface IGraph {
   datasource: string;
-  labels: ILabels;
+  labels?: {
+    nodes: ILabel[];
+    edges: ILabel[];
+  };
   nodes: IElement[];
   edges: IElement[];
 };
@@ -24,7 +27,6 @@ export interface ILabel {
   idx: number,                    // desc by size
   name: string;
   size: number;
-  total: number;                  // from meta
   elements?: IElement[];          // e.data.label = ${name}
   color?: string;                 // node: background-color, edge: target-arrow-color
 }
@@ -51,6 +53,11 @@ export interface IElement {
     _target?: IElement;           // for only EDGE
   };
 };
+
+export interface IUserEvent {
+  type: string;
+  data: any;
+}
 
 ///////////////////////////////////////////////////////////////
 

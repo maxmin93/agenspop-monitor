@@ -67,25 +67,53 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
         }
     }
 
-    suspend fun findConnectedEdges(request: ServerRequest): ServerResponse {
-        val criterias = request.queryParams()
-        return when {
-            criterias.isEmpty() -> ServerResponse.badRequest().json()
+    suspend fun findConnectedVertices(request: ServerRequest): ServerResponse {
+        val params = try {
+            request.bodyToMono<Map<String,String>>().awaitFirstOrNull()
+        } catch (e: Exception) {
+            logger.error("Decoding body error", e)
+            null
+        }
+
+        return if (params == null) {
+            ServerResponse.badRequest().json()
                     .bodyValueAndAwait(ErrorMessage("Search must have query params"))
-            criterias.contains("datasource")&&criterias.contains("q") -> {
-                val datasource = criterias.getFirst("datasource")
-                val vids:List<String>? = criterias.getFirst("q")?.split(",")
-                if (datasource.isNullOrBlank() || vids.isNullOrEmpty()) {
-                    ServerResponse.badRequest().json()
-                            .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
-                                    +"datasource, q"))
-                } else {
-                    ServerResponse.ok().json()
-                            .bodyAndAwait(service.findConnectedEdges(datasource,vids)!!)
-                }
+        } else {
+            val datasource = params.get("datasource")
+            val ids:List<String>? = params.get("q")?.split(",")
+            if (datasource.isNullOrBlank() || ids.isNullOrEmpty()) {
+                ServerResponse.badRequest().json()
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                                +"datasource, q"))
+            } else {
+                ServerResponse.ok().json()
+                        .bodyAndAwait(service.findConnectedVertices(datasource,ids)!!)
             }
-            else -> ServerResponse.badRequest().json()
-                    .bodyValueAndAwait(ErrorMessage("Incorrect search criteria"))
+        }
+    }
+
+    suspend fun findConnectedEdges(request: ServerRequest): ServerResponse {
+        val params = try {
+            request.bodyToMono<Map<String,String>>().awaitFirstOrNull()
+        } catch (e: Exception) {
+            logger.error("Decoding body error", e)
+            null
+        }
+
+        return if (params == null) {
+            ServerResponse.badRequest().json()
+                    .bodyValueAndAwait(ErrorMessage("Search must have query params"))
+        } else {
+            val datasource = params.get("datasource")
+            val ids:List<String>? = params.get("q")?.split(",")
+            if (datasource.isNullOrBlank() || ids.isNullOrEmpty()) {
+                ServerResponse.badRequest().json()
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                                +"datasource, q"))
+            } else {
+                ServerResponse.ok().json()
+                        .bodyAndAwait(service.findConnectedEdges(datasource,ids)!!)
+            }
         }
     }
 
@@ -134,24 +162,27 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
     }
 
     suspend fun findElements(request: ServerRequest): ServerResponse {
-        val criterias = request.queryParams()
-        return when {
-            criterias.isEmpty() -> ServerResponse.badRequest().json()
+        val params = try {
+            request.bodyToMono<Map<String,String>>().awaitFirstOrNull()
+        } catch (e: Exception) {
+            logger.error("Decoding body error", e)
+            null
+        }
+
+        return if (params == null) {
+            ServerResponse.badRequest().json()
                     .bodyValueAndAwait(ErrorMessage("Search must have query params"))
-            criterias.contains("datasource")&&criterias.contains("q") -> {
-                val datasource = criterias.getFirst("datasource")
-                val ids:List<String>? = criterias.getFirst("q")?.split(",")
-                if (datasource.isNullOrBlank() || ids.isNullOrEmpty()) {
-                    ServerResponse.badRequest().json()
-                            .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
-                                    +"datasource, q"))
-                } else {
-                    ServerResponse.ok().json()
-                            .bodyAndAwait(service.findElements(datasource,ids)!!)
-                }
+        } else {
+            val datasource = params.get("datasource")
+            val ids:List<String>? = params.get("q")?.split(",")
+            if (datasource.isNullOrBlank() || ids.isNullOrEmpty()) {
+                ServerResponse.badRequest().json()
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                                +"datasource, q"))
+            } else {
+                ServerResponse.ok().json()
+                        .bodyAndAwait(service.findElements(datasource,ids)!!)
             }
-            else -> ServerResponse.badRequest().json()
-                    .bodyValueAndAwait(ErrorMessage("Incorrect search criteria"))
         }
     }
 

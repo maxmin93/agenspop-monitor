@@ -1,4 +1,4 @@
-import { Component, NgZone, OnInit, AfterViewInit } from '@angular/core';
+import { Component, ViewChild, ElementRef, NgZone, OnInit, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, Router }     from '@angular/router';
 import { Observable }         from 'rxjs';
 import { map }                from 'rxjs/operators';
@@ -6,9 +6,11 @@ import { map }                from 'rxjs/operators';
 import { AmApiService } from '../../services/am-api.service';
 import { IAggregation, IQuery } from '../../services/agens-event-types';
 import { DATE_UTILS } from '../../services/agens-util-funcs';
+
+import { NgbModal, ModalDismissReasons, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import * as _ from 'lodash';
 
-import { IGraph, EMPTY_GRAPH, IElement, ILabels, ILabel } from '../../services/agens-graph-types';
+import { IGraph, EMPTY_GRAPH, IElement, IUserEvent, ILabels, ILabel } from '../../services/agens-graph-types';
 import { CY_STYLES } from '../../services/agens-cyto-styles';
 
 import * as am4core from "@amcharts/amcharts4/core";
@@ -18,6 +20,8 @@ import am4themes_animated from "@amcharts/amcharts4/themes/animated";
 am4core.useTheme(am4themes_animated);
 
 declare const cytoscape:any;
+declare const tippy:any;
+declare const jQuery:any;
 
 const CY_CONFIG:any ={
   layout: { name: "euler"
@@ -33,7 +37,13 @@ const CY_CONFIG:any ={
   motionBlur: true,
   selectionType: "single",
   // autoungrabify: true        // cannot move node by user control
-}
+};
+
+export interface ICtxMenuItem {
+  label: string;
+  click: Function;
+  subActions?: ICtxMenuItem[];
+};
 
 @Component({
   selector: 'app-monitor-view',
@@ -57,9 +67,20 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
   private g:IGraph = undefined;
   cy: any = undefined;                  // cytoscape.js
 
+  private cyPrevEvent:IUserEvent = { type: undefined, data: undefined };  // 중복 idle 이벤트 제거용
+
+  // for doubleTap
+  tappedBefore:any;
+  tappedTimeout:any;
+  tappedTarget:any;
+  tappedCount:number = 0;
+
   heading = 'Monitor Dashboard';
   subheading = 'This is an real-time monitor dashboard for Agenspop.';
   icon = 'pe-7s-plane icon-gradient bg-tempting-azure';
+
+  @ViewChild("cy", {read: ElementRef, static: false}) divCy: ElementRef;
+  // @Output() actionEmitter= new EventEmitter<IUserEvent>();
 
   constructor(
     private amApiService: AmApiService,
@@ -82,21 +103,27 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
         console.log('query:', r);
         if( !!r ){
           this.query = r;
-          if( this.query.query ) this.query['slicedQry'] = this.query.query.substr(0,100);
+          if( this.query.query ){
+            this.query['slicedQry'] = this.query.query.substr(0,100);
+
+            // load graph-data
+            this.g = this.loadQueryByGremlin(this.query.datasource, this.query.query);
+            console.log("graph:", this.g);
+          }
         }
       });
     });
   }
 
   ngAfterViewInit() {
-    this.doInit();
+    this.doInitChart();
   }
 
   ngOnDestroy() {
-    this.doDestory();
+    this.doDestoryChart();
   }
 
-  doInit(){
+  doInitChart(){
     let aggregations$ = this.amApiService.findAggregationsByQid(this.qid);
     aggregations$.pipe(map(q=><IAggregation[]>q)).subscribe(rows => {
       this.aggregations = _.sortBy(rows, ['edate']);
@@ -109,7 +136,7 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     });
   }
 
-  doDestory(){
+  doDestoryChart(){
     this.zone.runOutsideAngular(() => {
       if (this.chart) this.chart.dispose();
     });
@@ -117,8 +144,8 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
 
   doRefresh($event){
     if( $event ){
-      this.doDestory();
-      this.doInit();
+      this.doDestoryChart();
+      this.doInitChart();
     }
   }
 
@@ -180,9 +207,151 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     return chart;
   }
 
+  /////////////////////////////////////////////////////////////////////////
 
   /////////////////////////////////////////////////////////////////////////
+
+  /* //
+  1) 기간 from ~ to 구하고
+  2) event_rows 로부터 조건1(qid), 조건2(from ~ to) 조회
+      => ids list (중복제거)
+      ** NOTE: alert 서버에서 필요한 데이터를 모두 제공하도록 기술
+  3) agenspop 에 질의
+      - Lv1 : monitoring target elements
+      - Lv2 : connected edges (if targets are nodes) or vertices (if targets are edges)
+      - Lv3 : if any target is not edge, retrieve neighbors of targets and connected edges
+  4) Styling
+      - targets : opacity  = 1, labeling by id
+      - others : opacity = 0.3, no labeling
+  5) Action
+      - On click, show properties of itself
+  */ //
+
+  private getLabels(arr:IElement[]):ILabel[] {
+    let grp = _.groupBy(arr, 'data.label');     // { labelName: [eles ...], ... }
+    let keys = Object.keys(grp);
+    let labels:ILabel[] = [];
+    for( let i=0; i<keys.length; i+=1 ){
+      let eles = grp[keys[i]];
+      labels.push( <ILabel>{ idx: i, name: keys[i], size: eles.length, elements: eles } );
+    }
+    return labels;
+  }
+
+  loadQueryByGremlin( datasource:string, script:string ){
+    let graph:IGraph = {
+      datasource: datasource,
+      labels: { nodes: [], edges: [] },
+      nodes: [],
+      edges: []
+    };
+
+    let eles$:Observable<IElement[]> = this.amApiService.execGremlin(datasource, script);
+    eles$.subscribe(r=>{
+      console.log("** gremlin =>", r);
+      let nodes = r.filter(e=>e.group == 'nodes').map(e=>{ e.scratch['type']='targets'; return e; });
+      let edges = r.filter(e=>e.group == 'edges').map(e=>{ e.scratch['type']='targets'; return e; });
+      if( nodes.length > 0 && edges.length == 0 ){
+        graph.nodes = nodes;
+        graph.labels.nodes = this.getLabels(nodes);
+        // get connected edges of vertices
+        let vids = nodes.map(e=>e.data.id);
+        let connected$:Observable<IElement[]> = this.amApiService.findConnectedEdges(datasource, vids);
+        connected$.subscribe(ce=>{
+          console.log("** connected edges =>", ce);
+          graph.edges = ce.map(e=>{ e.scratch['type']='neighbors'; return e; });
+          graph.labels.edges = this.getLabels(graph.edges);
+        });
+      }
+      else if( nodes.length == 0 && edges.length > 0 ){
+        graph.edges = edges;
+        graph.labels.edges = this.getLabels(edges);
+        // get connected vertices of edges
+        let eids = edges.map(e=>e.data.id);
+        let connected$:Observable<IElement[]> = this.amApiService.findConnectedVertices(datasource, eids);
+        connected$.subscribe(cv=>{
+          console.log("** connected vertices =>", cv);
+          graph.nodes = cv.map(e=>{ e.scratch['type']='neighbors'; return e; });
+          graph.labels.nodes = this.getLabels(graph.nodes);
+        });
+      }
+    });
+
+    return graph;
 /*
+    .subscribe(result => {
+      let labels = result[0];
+      let nodesSet:Set<IElement> = new Set();
+      for( let i=1; i<results.length; i+=1 ){
+        for( let ele of <IElement[]>results[i] ) nodesSet.add( ele );
+      }
+      let nodes:IElement[] = Array.from(nodesSet.values());
+      this.apApiService.findEdgesOfVertices(datasource, nodes.map(e=>e.data.id)).subscribe(edges=>{
+
+        // for DEBUG : elapsedTime recording end
+        if( localStorage.getItem('debug')=='true' ){
+          console.timeEnd(this.timeLabel);
+          console.log(`  => nodes(${(<IElement[]>nodes).length}), edges(${(<IElement[]>edges).length})`);
+        }
+
+        // STEP0) make dictionary of nodes, edges
+        this.vids = new Map<string,IElement>( (<IElement[]>nodes).map((e,i)=>{
+          e.scratch['_idx'] = i;    // for elgrapho
+          return [e.data.id, e];
+        }) );
+        this.eids = new Map<string,IElement>( (<IElement[]>edges).map((e,i)=>{
+          return [e.data.id, e];
+        }) );
+
+        // STEP1) load nodes and make vids
+        this.g = {
+          datasource: datasource,
+          nodes: nodes,
+          edges: undefined,
+          labels: undefined
+        };
+        // STEP2) load edges
+        this.g.edges = this.connectedEdges(edges, this.vids);
+        // STEP3) load labels
+        this.g.labels = {
+          nodes: this.getLabels(this.g.nodes, labels['V']),
+          edges: this.getLabels(this.g.edges, labels['E'])
+        };
+        // STEP4) set colors with own label
+        this.setColors(this.g.labels);
+        // for DEBUG
+        window['agens'] = this.g;
+
+        // STEP 5) activate target screen
+        this.gCy = this.gEl = this.g;
+        if( localStorage.getItem('init-mode')=='canvas' ){
+          this.changeScreenMode('canvas');
+        } else {
+          this.changeScreenMode('webgl');
+        }
+        // console.log('loadQueryByGremlin', this.gEl);
+      });
+    });
+*/
+  }
+
+  /////////////////////////////////////////////////////////////////////////
+
+  private setStyleNode(e:any){
+    e.ungrabify();
+    if( e.scratch('_color') ){
+      e.style('background-color', e.scratch('_color'));
+    }
+    e.style('background-image', null);
+    e.style('border-opacity', 1);
+  }
+  private setStyleEdge(e:any){
+    if( e.scratch('_color') && e.scratch('_color').length == 2 ){
+      e.style('target-arrow-color', e.scratch('_color')[1]);
+      e.style('line-gradient-stop-colors', e.scratch('_color'));
+    }
+  }
+
   loadGraph(g:IGraph){
     // for DEBUG
     // if( localStorage.getItem('debug')=='true' ) console.log('loadGraph', g);
@@ -201,22 +370,11 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
       }
     });
 
-    // STEP4) ready event
-    this.readyEmitter.emit(<IEvent>{ type: 'node-labels', data: g.labels.nodes });
-    this.readyEmitter.emit(<IEvent>{ type: 'edge-labels', data: g.labels.edges });
-    this.readyEmitter.emit(<IEvent>{ type: 'layouts', data: this.dispLayouts });
-
     this.cyInit(config);
   }
 
   cyInit(config:any){
     cytoscape.warnings(false);                 // ** for PRODUCT : custom wheel sensitive
-
-    // for DEBUG : elapsedTime recording start
-    if( localStorage.getItem('debug')=='true' ){
-      this.timeLabel = `canvas-ready`;
-      console.time(this.timeLabel);
-    }
 
     if( localStorage.getItem('init-mode')=='canvas' ){
       config.layout = { name: "random"
@@ -225,31 +383,6 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
       };
     }
     this.cy = window['cy'] = cytoscape(config);
-
-    // **NOTE : 여기서 측정하는 것이 ready()에서 측정하는 것보다 1초+ 정도 느리다.
-    //      ==> ready() 에서 모든 nodes, edges 들의 style 처리후 빠져나옴
-    //      ==> 이 시점에서 화면상에 그래프는 보이지 않음. 브라우저에서 실제 그리는 시간이 추가로 소요됨 (측정불가. 도구가 없음)
-
-    // for DEBUG : elapsedTime recording end
-    if( localStorage.getItem('debug')=='true' ){
-      console.timeEnd(this.timeLabel);
-      console.log(`  => nodes(${this.cy.nodes().size()}), edges(${this.cy.edges().size()})`);
-      this.timeLabel = null;
-    }
-
-    // undo-redo
-    this.ur = this.cy.undoRedo(UR_CONFIG);
-    this.cy.on("afterDo", (event, actionName, args, res)=>{
-      this.readyEmitter.emit(<IEvent>{ type: 'undo-changed', data: this.ur });
-    });
-    this.cy.on("afterUndo", (event, actionName, args, res)=>{
-      this.readyEmitter.emit(<IEvent>{ type: 'undo-changed', data: this.ur });
-      this.readyEmitter.emit(<IEvent>{ type: 'redo-changed', data: this.ur });
-    });
-    this.cy.on("afterRedo", (event, actionName, args, res)=>{
-      this.readyEmitter.emit(<IEvent>{ type: 'redo-changed', data: this.ur });
-    });
-
 
     // make linking el-events to inner
     this.cy._private.emitter.$customFn = (e)=>this.cyEventsMapper(e);
@@ -261,26 +394,8 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     // right-button click : context-menu on node
     cy.on('cxttap', (e)=>{
       if( e.target === cy ){
-        this.contextMenuService.show.next({
-          anchorElement: cy.popperRef({renderedPosition: () => ({
-            x: e.originalEvent.offsetX-5, y: e.originalEvent.offsetY-5 }),}),
-          contextMenu: this.cyBgMenu,
-          event: <MouseEvent>e.orignalEvent,
-          item: e.target
-        });
+        console.log("cxttap :", <MouseEvent>e.orignalEvent);
       }
-      // **NOTE: ngx-contextmenu is FOOLISH! ==> do change another!
-      else if( e.target.isNode() ){
-        this.listVertexNeighbors(e.target, ()=>{
-          this.contextMenuService.show.next({
-            anchorElement: e.target.popperRef(),
-            contextMenu: this.cyMenu,
-            event: <MouseEvent>e.orignalEvent,
-            item: e.target
-          });
-        });
-      }
-
       e.preventDefault();
       e.stopPropagation();
     });
@@ -377,10 +492,10 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     let e = target.size() > 1 ? target.first() : target;
     let json = <IElement>e.json();      // expand 된 개체는 g 모체에 없기 때문에 직접 추출
     json.scratch = e.scratch();         // json() 출력시 scratch 는 누락됨
-    this.actionEmitter.emit(<IEvent>{
-      type: 'property-show',
-      data: json   //{ index: e.isNode() ? 'v' : 'e', id: e.id() }
-    });
+    // this.actionEmitter.emit(<IUserEvent>{
+    //   type: 'property-show',
+    //   data: json   //{ index: e.isNode() ? 'v' : 'e', id: e.id() }
+    // });
 
     if( e.isEdge() ){
       // edge 선택시 연결된 source, target nodes 도 함께 선택
@@ -394,6 +509,62 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     }
     // else this.cyHighlight(e);
   }
-*/
+
+  cyNodeDblClick(target:any){
+    let e = target.size() > 1 ? target.first() : target;
+
+    // for DEBUG
+    if( localStorage.getItem('debug')=='true' ) console.log('DblClick('+this.tappedCount+'):', e.id());
+
+    if( this.tappedTarget == e ) this.tappedCount += 1;
+    else{
+      this.tappedCount = 1;
+      this.tappedTarget = e;
+    }
+
+    let eles = this.cy.collection().add(e);
+    for( let i=0; i<this.tappedCount; i+=1 ){
+      eles = eles.union( eles.neighborhood() );
+    }
+
+    eles.grabify();
+    eles.select();
+  }
+
+  cyBgIdle(target){
+    // this.actionEmitter.emit(<IUserEvent>{
+    //   type: 'property-hide',
+    //   data: this.cyPrevEvent.type !== 'idle'
+    // });
+    // // reset doubleTap
+    if( this.tappedTarget ){
+      this.tappedCount = 0;
+      this.tappedTarget = null;
+    }
+
+    // when label selection, the others set faded
+    // ==> release faded style
+    this.cy.batch(()=>{   // ==> without triggering redraws
+      this.cy.$('node:selected').ungrabify();
+      this.cy.nodes().forEach(e=>{ if(e.scratch('_tippy')) e.scratch('_tippy').hide(); });
+    });
+    this.cy.$(':selected').unselect();
+  }
+
+  cyMakeTippy(node, text){
+    return tippy( node.popperRef(), {
+      content: function(){
+        var div = document.createElement('div');
+        div.innerHTML = text;
+        return div;
+      },
+      trigger: 'manual',
+      arrow: true,
+      placement: 'bottom',
+      hideOnClick: false,
+      multiple: true,
+      sticky: true
+    } );
+  };
 
 }

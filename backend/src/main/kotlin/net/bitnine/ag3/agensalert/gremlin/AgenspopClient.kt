@@ -15,10 +15,17 @@ class AgenspopClient(private val webClient: WebClient){
                     .retrieve()
                     .bodyToMono(Map::class.java)
 
-    fun findConnectedEdges(datasource:String, vids:List<String>) =
+    fun findConnectedEdges(datasource:String, ids:List<String>) =
             webClient.post()
                     .uri("/search/"+datasource+"/e/connected")
-                    .body(Mono.just(mapOf("q" to vids)), Map::class.java)
+                    .body(Mono.just(mapOf("q" to ids)), Map::class.java)
+                    .retrieve()
+                    .bodyToFlux(Map::class.java)
+
+    fun findConnectedVertices(datasource:String, ids:List<String>) =
+            webClient.post()
+                    .uri("/search/"+datasource+"/v/connected")
+                    .body(Mono.just(mapOf("q" to ids)), Map::class.java)
                     .retrieve()
                     .bodyToFlux(Map::class.java)
 

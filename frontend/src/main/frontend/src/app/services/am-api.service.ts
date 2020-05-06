@@ -4,6 +4,7 @@ import { from, throwError, of } from 'rxjs';
 import { map, share, tap, catchError, retry, concatAll, timeout } from 'rxjs/operators';
 import * as _ from 'lodash';
 import { IQuery } from './agens-event-types';
+import { IElement } from './agens-graph-types';
 
 const TIMEOUT_LIMIT:number = 9999;
 
@@ -115,6 +116,36 @@ export class AmApiService {
       retry(3), // retry a failed request up to 3 times
       catchError(this.handleError) // then handle the error
     );
+  }
+
+  public execGremlin(datasource:string, script:string){
+    let uri = this.apiUrl+'/agens/gremlin';
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    let params = { datasource: datasource, q: script };
+    return this._http.post<IElement[]>( uri, params, { headers : headers })
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  public findConnectedEdges(datasource:string, ids:string[]){
+    let uri = this.apiUrl+'/agens/connected_edges';
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    let params = { datasource: datasource, q: ids.join(',') };
+    return this._http.post<IElement[]>( uri, params, { headers : headers })
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  public findConnectedVertices(datasource:string, ids:string[]){
+    let uri = this.apiUrl+'/agens/connected_vertices';
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    let params = { datasource: datasource, q: ids.join(',') };
+    return this._http.post<IElement[]>( uri, params, { headers : headers })
+      .pipe(
+        catchError(this.handleError)
+      );
   }
 
 }
