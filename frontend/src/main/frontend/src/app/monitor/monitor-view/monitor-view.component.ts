@@ -1,11 +1,12 @@
-import { Component, ViewChild, ElementRef, NgZone, OnInit, AfterViewInit } from '@angular/core';
-import { ActivatedRoute, Router }     from '@angular/router';
-import { Observable }         from 'rxjs';
-import { map }                from 'rxjs/operators';
+import { Component, ViewChild, ElementRef, NgZone, OnInit, AfterViewInit, EventEmitter } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Observable, from, of, forkJoin } from 'rxjs';
+import { map, share } from 'rxjs/operators';
 
 import { AmApiService } from '../../services/am-api.service';
 import { IAggregation, IQuery } from '../../services/agens-event-types';
 import { DATE_UTILS } from '../../services/agens-util-funcs';
+import { PALETTE_DARK, PALETTE_BRIGHT } from '../../utils/palette-colors';
 
 import { NgbModal, ModalDismissReasons, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import * as _ from 'lodash';
@@ -64,8 +65,9 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
 
   private chart: am4charts.XYChart;
 
-  private g:IGraph = undefined;
+  private g:IGraph = EMPTY_GRAPH;
   cy: any = undefined;                  // cytoscape.js
+  readyEmitter = new EventEmitter<boolean>();
 
   private cyPrevEvent:IUserEvent = { type: undefined, data: undefined };  // 중복 idle 이벤트 제거용
 
@@ -105,10 +107,8 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
           this.query = r;
           if( this.query.query ){
             this.query['slicedQry'] = this.query.query.substr(0,100);
-
             // load graph-data
-            this.g = this.loadQueryByGremlin(this.query.datasource, this.query.query);
-            console.log("graph:", this.g);
+            this.loadQueryByGremlin(this.query.datasource, this.query.query);
           }
         }
       });
@@ -117,6 +117,12 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     this.doInitChart();
+    // graph data ready
+    this.readyEmitter.subscribe(r=>{
+      if( r ){
+        this.initGraph(this.g);
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -203,6 +209,14 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     let scrollbarX = new am4charts.XYChartScrollbar();
     scrollbarX.series.push(series);
     chart.scrollbarX = scrollbarX;
+    scrollbarX.startGrip.events.on("dragstop", e=>{
+      let time = dateAxis.xToValue(e.target.pixelX);
+      console.log("dragstop[Start]:", e.target.pixelX, DATE_UTILS.toYYYYMMDD(new Date(time)));
+    });
+    scrollbarX.endGrip.events.on("dragstop", e=>{
+      let time = dateAxis.xToValue(e.target.pixelX);
+      console.log("dragstop[End]:", e.target.pixelX, DATE_UTILS.toYYYYMMDD(new Date(time)));
+    });
 
     return chart;
   }
@@ -234,108 +248,78 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     for( let i=0; i<keys.length; i+=1 ){
       let eles = grp[keys[i]];
       labels.push( <ILabel>{ idx: i, name: keys[i], size: eles.length, elements: eles } );
+      eles.forEach(e=>e.scratch['_label'] = <ILabel>labels[i]);
     }
     return labels;
   }
 
   loadQueryByGremlin( datasource:string, script:string ){
-    let graph:IGraph = {
-      datasource: datasource,
-      labels: { nodes: [], edges: [] },
-      nodes: [],
-      edges: []
-    };
-
     let eles$:Observable<IElement[]> = this.amApiService.execGremlin(datasource, script);
     eles$.subscribe(r=>{
-      console.log("** gremlin =>", r);
-      let nodes = r.filter(e=>e.group == 'nodes').map(e=>{ e.scratch['type']='targets'; return e; });
-      let edges = r.filter(e=>e.group == 'edges').map(e=>{ e.scratch['type']='targets'; return e; });
-      if( nodes.length > 0 && edges.length == 0 ){
-        graph.nodes = nodes;
-        graph.labels.nodes = this.getLabels(nodes);
-        // get connected edges of vertices
-        let vids = nodes.map(e=>e.data.id);
-        let connected$:Observable<IElement[]> = this.amApiService.findConnectedEdges(datasource, vids);
-        connected$.subscribe(ce=>{
-          console.log("** connected edges =>", ce);
-          graph.edges = ce.map(e=>{ e.scratch['type']='neighbors'; return e; });
-          graph.labels.edges = this.getLabels(graph.edges);
-        });
-      }
-      else if( nodes.length == 0 && edges.length > 0 ){
-        graph.edges = edges;
-        graph.labels.edges = this.getLabels(edges);
-        // get connected vertices of edges
-        let eids = edges.map(e=>e.data.id);
-        let connected$:Observable<IElement[]> = this.amApiService.findConnectedVertices(datasource, eids);
-        connected$.subscribe(cv=>{
-          console.log("** connected vertices =>", cv);
-          graph.nodes = cv.map(e=>{ e.scratch['type']='neighbors'; return e; });
-          graph.labels.nodes = this.getLabels(graph.nodes);
-        });
-      }
-    });
+        this.g.datasource = datasource;
 
-    return graph;
-/*
-    .subscribe(result => {
-      let labels = result[0];
-      let nodesSet:Set<IElement> = new Set();
-      for( let i=1; i<results.length; i+=1 ){
-        for( let ele of <IElement[]>results[i] ) nodesSet.add( ele );
-      }
-      let nodes:IElement[] = Array.from(nodesSet.values());
-      this.apApiService.findEdgesOfVertices(datasource, nodes.map(e=>e.data.id)).subscribe(edges=>{
-
-        // for DEBUG : elapsedTime recording end
-        if( localStorage.getItem('debug')=='true' ){
-          console.timeEnd(this.timeLabel);
-          console.log(`  => nodes(${(<IElement[]>nodes).length}), edges(${(<IElement[]>edges).length})`);
+        console.log("** gremlin =>", r);
+        let nodes = r.filter(e=>e.group == 'nodes').map(e=>{ e.scratch['type']='targets'; return e; });
+        let edges = r.filter(e=>e.group == 'edges').map(e=>{ e.scratch['type']='targets'; return e; });
+        if( nodes.length > 0 && edges.length == 0 ){
+          this.g.nodes = nodes;
+          this.g.labels.nodes = this.getLabels(nodes);
+          // get connected edges of vertices
+          let vids = nodes.map(e=>e.data.id);
+          this.amApiService.findConnectedEdges(datasource, vids).pipe(
+              map(e=>{ e.forEach(x=>x.scratch['type']='neighbors'); return e; })
+            ).subscribe(e=>{
+              this.g.edges = e;
+              this.g.labels.edges = this.getLabels(e);
+              this.readyEmitter.emit(true);
+            });
         }
-
-        // STEP0) make dictionary of nodes, edges
-        this.vids = new Map<string,IElement>( (<IElement[]>nodes).map((e,i)=>{
-          e.scratch['_idx'] = i;    // for elgrapho
-          return [e.data.id, e];
-        }) );
-        this.eids = new Map<string,IElement>( (<IElement[]>edges).map((e,i)=>{
-          return [e.data.id, e];
-        }) );
-
-        // STEP1) load nodes and make vids
-        this.g = {
-          datasource: datasource,
-          nodes: nodes,
-          edges: undefined,
-          labels: undefined
-        };
-        // STEP2) load edges
-        this.g.edges = this.connectedEdges(edges, this.vids);
-        // STEP3) load labels
-        this.g.labels = {
-          nodes: this.getLabels(this.g.nodes, labels['V']),
-          edges: this.getLabels(this.g.edges, labels['E'])
-        };
-        // STEP4) set colors with own label
-        this.setColors(this.g.labels);
-        // for DEBUG
-        window['agens'] = this.g;
-
-        // STEP 5) activate target screen
-        this.gCy = this.gEl = this.g;
-        if( localStorage.getItem('init-mode')=='canvas' ){
-          this.changeScreenMode('canvas');
-        } else {
-          this.changeScreenMode('webgl');
+        else if( nodes.length == 0 && edges.length > 0 ){
+          this.g.edges = edges;
+          this.g.labels.edges = this.getLabels(edges);
+          // get connected vertices of edges
+          let eids = edges.map(e=>e.data.id);
+          this.amApiService.findConnectedVertices(datasource, eids).pipe(
+              map(e=>{ e.forEach(x=>x.scratch['type']='neighbors'); return e; })
+            ).subscribe(e=>{
+              this.g.nodes = e;
+              this.g.labels.nodes = this.getLabels(e);
+              this.readyEmitter.emit(true);
+            });
         }
-        // console.log('loadQueryByGremlin', this.gEl);
       });
-    });
-*/
   }
 
   /////////////////////////////////////////////////////////////////////////
+
+  private setColors(labels:ILabels){
+    for( let x of labels.nodes ){
+      x['color'] = PALETTE_DARK[x['idx']%PALETTE_DARK.length];      // DARK colors
+      x['elements'].forEach(e=>{
+        e.scratch['_color'] = x['color'];             // string
+      });
+    }
+    for( let x of labels.edges ){
+      x['color'] = PALETTE_BRIGHT[x['idx']%PALETTE_BRIGHT.length];  // no meaning!!
+      x['elements'].forEach(e=>{
+        e.scratch['_color'] = [                       // string[]
+          (e.scratch._source).scratch._label.color,   // source node
+          (e.scratch._target).scratch._label.color,   // target node
+        ];
+      });
+    }
+  }
+  private connectedEdges(edges:IElement[], vids:Map<string,IElement>):IElement[] {
+    let connected:IElement[] = [];
+    for( let e of edges ){
+      if( vids.has(e.data.source) && vids.has(e.data.target) ){
+        e.scratch._source = vids.get(e.data.source);
+        e.scratch._target = vids.get(e.data.target);
+        connected.push( e );
+      }
+    }
+    return connected;
+  }
 
   private setStyleNode(e:any){
     e.ungrabify();
@@ -352,9 +336,17 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     }
   }
 
-  loadGraph(g:IGraph){
+  initGraph(g:IGraph){
+    let vids = new Map<string,IElement>( g.nodes.map((e,i)=>{
+      e.scratch['_idx'] = i;    // for elgrapho
+      return [e.data.id, e];
+    }) );
+    g.edges = this.connectedEdges( g.edges, vids);
+
+    // STEP4) set colors with own label
+    this.setColors(g.labels);
     // for DEBUG
-    // if( localStorage.getItem('debug')=='true' ) console.log('loadGraph', g);
+    window['agens'] = this.g;
 
     let pan = g.hasOwnProperty('pan') ? g['pan'] : { x:0, y:0 };
     let config:any = Object.assign( _.cloneDeep(CY_CONFIG), {
