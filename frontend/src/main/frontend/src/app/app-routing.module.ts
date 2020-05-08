@@ -7,7 +7,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { MonitorListComponent } from './monitor/monitor-list/monitor-list.component';
 import { MonitorViewComponent } from './monitor/monitor-view/monitor-view.component';
 import { MonitorLayoutComponent } from './monitor/monitor-layout/monitor-layout.component';
-import { MonitorMenusComponent } from './monitor/monitor-menus/monitor-menus.component';
+import { MonitorRealtimeComponent } from './monitor/monitor-realtime/monitor-realtime.component';
 
 // DEMO PAGES
 import {BaseLayoutComponent} from './Layout/base-layout/base-layout.component';
@@ -60,6 +60,7 @@ const routes: Routes = [
     children: [
       {path: '', component: MonitorListComponent, data: {extraParameter: 'dashboardsMenu'}},
       {path: 'view', component: MonitorViewComponent, data: {extraParameter: 'elementsMenu'}},
+      {path: 'realtime', component: MonitorRealtimeComponent, data: {extraParameter: 'elementsMenu'}},
     ]
   },
   {

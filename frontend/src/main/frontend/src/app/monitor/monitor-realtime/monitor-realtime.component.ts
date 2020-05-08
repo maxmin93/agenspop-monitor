@@ -41,11 +41,11 @@ const CY_CONFIG:any ={
 };
 
 @Component({
-  selector: 'app-monitor-view',
-  templateUrl: './monitor-view.component.html',
-  styleUrls: ['./monitor-view.component.scss']
+  selector: 'app-monitor-realtime',
+  templateUrl: './monitor-realtime.component.html',
+  styleUrls: ['./monitor-realtime.component.scss']
 })
-export class MonitorViewComponent implements OnInit, AfterViewInit {
+export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
   aggregations:IAggregation[] = [];
   query:any = { datasource: 'unknown', name: 'unknown', query: null, slicedQry: null };    // IQuery
@@ -75,7 +75,7 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
   tappedTarget:any;
   tappedCount:number = 0;
 
-  heading = 'History Monitor';
+  heading = 'Realtime Monitor';
   subheading = 'This is an real-time monitor dashboard for Agenspop.';
   icon = 'pe-7s-plane icon-gradient bg-tempting-azure';
 

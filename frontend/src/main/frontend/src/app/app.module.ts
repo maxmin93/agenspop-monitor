@@ -97,6 +97,7 @@ import {BubbleChartComponent} from './DemoPages/Charts/chartjs/examples/bubble-c
 import {DynamicChartComponent} from './DemoPages/Charts/chartjs/examples/dynamic-chart/dynamic-chart.component';
 import {DoughnutChartComponent} from './DemoPages/Charts/chartjs/examples/doughnut-chart/doughnut-chart.component';
 import {PieChartComponent} from './DemoPages/Charts/chartjs/examples/pie-chart/pie-chart.component';
+import { MonitorRealtimeComponent } from './monitor/monitor-realtime/monitor-realtime.component';
 
 
 const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
@@ -113,6 +114,7 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
     MonitorLayoutComponent,
     MonitorMenusComponent,
     MonitorTitleComponent,
+    MonitorRealtimeComponent,
 
     // LAYOUT
     BaseLayoutComponent,

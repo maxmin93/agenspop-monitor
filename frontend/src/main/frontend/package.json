@@ -44,11 +44,11 @@
     "ng2-charts": "^2.3.0",
     "ngx-perfect-scrollbar": "^7.2.1",
     "pe7-icon": "^1.0.4",
-    "popper.js": "^1.16.1",
+    "popper.js": "^1.16.0",
     "redux": "^4.0.0",
     "redux-devtools-extension": "^2.13.8",
     "rxjs": "~6.4.0",
-    "tippy.js": "^4.3.5",
+    "tippy.js": "^5.2.1",
     "tslib": "^1.10.0",
     "zone.js": "~0.9.1"
   },
