@@ -13,6 +13,14 @@ import org.springframework.data.relational.core.mapping.Table
 import java.time.LocalDate
 import java.time.LocalTime
 
+
+// **NOTE :
+// Binding Values to Queries
+// https://github.com/spring-projects/spring-data-r2dbc/blob/master/src/main/asciidoc/reference/r2dbc-sql.adoc
+// ==> DATE 에 대한 bind 가 안됨 (통채로 문자열화 시켜 넣어야 작동) => IndexOutOfBoundsException
+//      .bind("from", LocalDate.of(2019,1,1))  => DATE '2019-01-01'
+//      DATE '2019-01-01'에서 'DATE' 없어도 괜찮음
+
 // data models
 @Table("event_qry")
 data class EventQry(
@@ -21,7 +29,7 @@ data class EventQry(
         @Column("active_yn") val active_yn: Boolean = false,
         @Column("datasource") val datasource: String,
         @Column("name") val name: String,
-        @Column("query") val query: String,                 // cannot be modified, only insert
+        @Column("script") val script: String,                 // cannot be modified, only insert
         @JsonFormat(pattern="yyyy-MM-dd")
         @CreatedDate
         @Column("cr_date") val cr_date: LocalDate? = null,
@@ -45,12 +53,12 @@ enum class EleType { nodes, edges }
 data class EventRow(
         @Id val id: Long? = null,
         @Column("qid") val qid: Long,
-        @Column("type") val type: String? = "nodes",
+        @Column("type") val type: String? = null,
 //        @Column("labels") val labels: Array<Any>? = null,
 //        @Column("ids") val ids: Array<Any>? = null,
         @Column("labels") val labels: String? = null,
         @Column("ids") val ids: String? = null,
-        @Column("ids_cnt") val ids_cnt: Long = 0,
+        @Column("ids_cnt") val ids_cnt: Long = 0L,
         @JsonFormat(pattern="yyyy-MM-dd")
         @Column("edate") val edate: LocalDate? = null,
         @JsonFormat(pattern="HH:mm:ss")
@@ -64,13 +72,19 @@ data class EventAgg(
         @JsonFormat(pattern="yyyy-MM-dd")
         @Column("edate") val edate: LocalDate,
         @Column("qid") val qid: Long = 0,
-        @Column("type") val type: String,
+        @Column("type") val type: String? = null,
 //        @Column("labels") val labels: Array<Array<String>>,
         @Column("labels") val labels: String? = null,
         @Column("row_cnt") val row_cnt: Long,
         @Column("ids_cnt") val ids_cnt: Long
 )
 
+
+class EventDateRange(
+        val from_date: LocalDate,
+        val to_date: LocalDate,
+        val cnt: Long
+)
 
 // rest models
 data class EventErrorMessage(val message: String)
@@ -83,7 +97,7 @@ data class EventUpdateMessage(
 data class EventDTO(
         val edate: LocalDate,
         val qid: Long,
-        val type: String,
+        val type: String? = null,
         val labels: List<String>,
         val ids_cnt: Long = 0
 )

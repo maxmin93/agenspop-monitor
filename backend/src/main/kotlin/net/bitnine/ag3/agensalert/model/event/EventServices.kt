@@ -3,9 +3,12 @@ package net.bitnine.ag3.agensalert.model.event
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import net.bitnine.ag3.agensalert.gremlin.AgenspopService
 import org.springframework.data.r2dbc.core.DatabaseClient
+import org.springframework.data.r2dbc.core.awaitFirstOrNull
 
 import org.springframework.stereotype.Service
+import reactor.core.Disposable
 import reactor.kotlin.core.publisher.toFlux
 import java.time.LocalDate
 
@@ -74,8 +77,10 @@ class EventRowService(
 
 
 @Service
-class EventAggService(private val repo: EventAggRepository) {
-
+class EventAggService(
+        private val repo: EventAggRepository,
+        private val db: DatabaseClient
+){
     suspend fun findAll() = repo.findAll().asFlow()
     suspend fun findById(id: Long) = repo.findById(id).awaitFirstOrNull()
 
@@ -95,5 +100,24 @@ class EventAggService(private val repo: EventAggRepository) {
             repo.delete(existingAgg).awaitFirstOrNull()
             true
         } else false
+    }
+
+    suspend fun findDateRange(qid: Long): MutableMap<String, Any>? {
+        // **NOTE: running queries
+        // https://docs.spring.io/spring-data/r2dbc/docs/1.1.0.RELEASE/reference/html/#r2dbc.datbaseclient.queries
+        // .asType<Map<String,Long>>()      // 안됨!! 생성자 호출함
+
+        val dateRange = db.execute("SELECT min(s.edate) as from_date, max(s.edate) as to_date, count(edate) as cnt FROM event_agg s WHERE s.qid = :qid")
+                .bind("qid",101L)
+                .fetch().awaitFirstOrNull()
+
+        // **NOTE: repository를 이용한 자유 쿼리는 안됨!!
+        //     ==> EventAgg 생성자 호출하면서 오류남
+        // val dateRange = repo.findDateRangeByQid(101).awaitFirstOrNull()
+
+        // println( "** dateRange: ${dateRange}")
+        // ==> dateRange: {FROM_DATE=2019-01-21, TO_DATE=2019-03-23, CNT=2}
+
+        return dateRange
     }
 }

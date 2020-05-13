@@ -34,6 +34,7 @@ export class MonitorListComponent implements AfterViewInit {
   selectedQuery:IQuery = null;
   editQueryForm: FormGroup;
 
+  datasources:string[] = [];
   queries:IQuery[] = [];
   aggregations:IAggregation[] = [];
 
@@ -77,6 +78,11 @@ export class MonitorListComponent implements AfterViewInit {
     queries$.pipe(map(q=><IQuery[]>q)).subscribe(rows => {
       // console.log('queries =>', rows);
       this.queries = rows;
+    });
+
+    let datasources$ = this.amApiService.findDatasources();
+    datasources$.subscribe(r => {
+      this.datasources = Object.keys(r);
     });
 
     let aggregations$ = this.amApiService.findAggregations();
@@ -302,7 +308,7 @@ total : sum of all ids_cnt
         active_yn: item.active_yn,
         name: item.name,
         datasource: item.datasource,
-        query: item.query
+        query: item.script
       });
     }
     else{         // new query

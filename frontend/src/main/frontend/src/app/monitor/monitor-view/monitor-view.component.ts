@@ -11,7 +11,7 @@ import { PALETTE_DARK, PALETTE_BRIGHT } from '../../utils/palette-colors';
 import { NgbModal, ModalDismissReasons, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import * as _ from 'lodash';
 
-import { IGraph, EMPTY_GRAPH, IElement, IUserEvent, ILabels, ILabel } from '../../services/agens-graph-types';
+import { IGraph, EMPTY_GRAPH, IElement, IUserEvent, ILabels, ILabel, CREATED_TAG } from '../../services/agens-graph-types';
 import { CY_STYLES } from '../../services/agens-cyto-styles';
 
 import * as am4core from "@amcharts/amcharts4/core";
@@ -103,10 +103,10 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
         console.log('query:', r);
         if( !!r ){
           this.query = r;
-          if( this.query.query ){
-            this.query['slicedQry'] = this.query.query.substr(0,100);
+          if( this.query.script ){
+            this.query['slicedQry'] = this.query.script.substr(0,100);
             // load graph-data
-            this.loadQueryByGremlin(this.query.datasource, this.query.query);
+            this.loadQueryByGremlin(this.query.datasource, this.query.script);
           }
         }
       });
@@ -356,8 +356,8 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
 
   private showGraphByDateTerms(cy:any, start_dt:Date, end_dt:Date){
     let targets = cy.elements()
-                    .filter(e=>e.scratch('_atype')=='target' && !!e.scratch('_adate'))
-                    .filter(e=>e.scratch('_adate') >= start_dt && e.scratch('_adate') <= end_dt);
+                    .filter(e=>e.scratch('_atype')=='target' && !!e.scratch(CREATED_TAG))
+                    .filter(e=>e.scratch(CREATED_TAG) >= start_dt && e.scratch(CREATED_TAG) <= end_dt);
     let connected_edges = targets.filter(e=>e.isNode()).connectedEdges();
     let connected_nodes = targets.filter(e=>e.isEdge()).connectedNodes();
 
@@ -376,7 +376,7 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
       let randomDay = Math.floor(Math.random() * (dayCount - 1)) + 1;
       let base_dt = new Date(this.start_dt);
       base_dt.setDate(base_dt.getDate()+randomDay);
-      e.scratch('_adate',base_dt);
+      e.scratch(CREATED_TAG,base_dt);
       console.log('random:', e.id(), DATE_UTILS.toYYYYMMDD(base_dt));
     });
   }

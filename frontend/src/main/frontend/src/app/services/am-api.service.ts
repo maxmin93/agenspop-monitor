@@ -35,6 +35,18 @@ export class AmApiService {
   };
 
   // queries
+  // http://localhost:8082/agens/datasources
+  public findDatasources() {
+    let uri = this.apiUrl+'/agens/datasources';
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    return this._http.get<any>( uri, { headers : headers })
+      .pipe(
+        retry(3), // retry a failed request up to 3 times
+        catchError(this.handleError) // then handle the error
+      );
+  }
+
+  // queries
   // http://localhost:8080/queries
   public findQueries() {
     let uri = this.apiUrl+'/queries';
@@ -122,6 +134,16 @@ export class AmApiService {
     let uri = this.apiUrl+'/agens/gremlin';
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     let params = { datasource: datasource, q: script };
+    return this._http.post<IElement[]>( uri, params, { headers : headers })
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  public execGremlinWithRange(datasource:string, script:string, from:string, to?:string){
+    let uri = this.apiUrl+'/agens/gremlin/range';
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    let params = { datasource: datasource, q: script, from: from, to: to };
     return this._http.post<IElement[]>( uri, params, { headers : headers })
       .pipe(
         catchError(this.handleError)

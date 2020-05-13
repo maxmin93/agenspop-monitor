@@ -73,4 +73,8 @@ interface EventAggRepository : ReactiveCrudRepository<EventAgg, Long> {
 
     @Query("SELECT s.* FROM event_agg s, event_qry q WHERE q.datasource = :datasource and q.id = s.qid order by s.edate, r.id")
     fun findAllByDatasource(datasource: String): Flux<EventAgg>
+
+    @Query("SELECT min(s.edate) as from_date, max(s.edate) as to_date, count(edate) as cnt FROM event_agg s WHERE s.qid = :qid")
+    fun findDateRangeByQid(qid: Long): Mono<Map<String,Long>>
+
 }

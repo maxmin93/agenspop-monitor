@@ -12,8 +12,10 @@ import {ActivatedRoute} from '@angular/router';
 export class MonitorMenusComponent implements OnInit {
   public extraParameter: any;
 
-  constructor(public globals: ThemeOptions, private activatedRoute: ActivatedRoute) {
-
+  constructor(
+    public globals: ThemeOptions,
+    private activatedRoute: ActivatedRoute
+  ) {
   }
 
   @select('config') public config$: Observable<any>;

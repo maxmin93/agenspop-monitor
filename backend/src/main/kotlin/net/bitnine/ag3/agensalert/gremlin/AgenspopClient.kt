@@ -29,11 +29,18 @@ class AgenspopClient(private val webClient: WebClient){
                     .retrieve()
                     .bodyToFlux(Map::class.java)
 
-    fun findNeighbors(datasource:String, vid:String) =
+    fun findNeighborsOfOne(datasource:String, vid:String) =
             webClient.get()
                     .uri("/search/"+datasource+"/v/neighbors?q="+vid)
                     .retrieve()
                     .bodyToMono(Map::class.java)
+
+    fun findNeighborsOfGrp(datasource:String, ids:List<String>) =
+            webClient.post()
+                    .uri("/search/"+datasource+"/v/neighbors")
+                    .body(Mono.just(mapOf("q" to ids)), Map::class.java)
+                    .retrieve()
+                    .bodyToFlux(Map::class.java)
 
     fun findVertices(datasource:String, ids:List<String>) =
             webClient.post()
@@ -53,6 +60,16 @@ class AgenspopClient(private val webClient: WebClient){
             webClient.post()
                     .uri("/graph/gremlin")
                     .body(Mono.just(mapOf("datasource" to datasource, "q" to script)), Map::class.java)
+                    .retrieve()
+                    .bodyToFlux(Map::class.java)
+
+    fun execGremlin(datasource:String, script:String, fromDate:String, toDate:String?=null) =
+            webClient.post()
+                    .uri("/graph/gremlin")
+                    .body(Mono.just(
+                            mapOf("datasource" to datasource, "q" to script
+                            , "from" to fromDate, "to" to toDate
+                            )), Map::class.java)
                     .retrieve()
                     .bodyToFlux(Map::class.java)
 

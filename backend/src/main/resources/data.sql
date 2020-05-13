@@ -31,16 +31,17 @@ CREATE TABLE IF NOT EXISTS event_qry(
 */
 
 truncate table event_qry;
-insert into event_qry(datasource, name, query) values
+insert into event_qry(datasource, name, script) values
 ('modern', 'new person', 'g.V().hasLabel("person")'),
 ('modern', 'EDGE: created', 'g.E().hasLabel("created")'),
 ('northwind', 'new customer', 'g.V().hasLabel("customer")'),
 ('northwind', 'new product', 'g.V().hasLabel("product")'),
-('northwind', 'new order', 'g.V().hasLabel("order")'),
+('northwind', 'new order of USA', 'g.V().hasLabel("order").has("ship_country","USA")'),
 ('northwind', 'new purchased', 'g.E().hasLabel("purchased")'),
 ('northwind', 'EDGE: sold', 'g.E().hasLabel("sold")'),
-('airroutes', 'new airport', 'g.V().hasLabel("airport")'),
-('airroutes', 'EDGE: route', 'g.E().hasLabel("route")');
+('northwind', 'EDGE: ships', 'g.E().hasLabel("ships")');
+--('airroutes', 'new airport', 'g.V().hasLabel("airport")'),
+--('airroutes', 'EDGE: route', 'g.E().hasLabel("route")');
 
 -- select * from event_qry;
 

@@ -2,16 +2,12 @@ package net.bitnine.ag3.agensalert.config
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import io.r2dbc.spi.Connection
 import io.r2dbc.spi.ConnectionFactory
+import net.bitnine.ag3.agensalert.gremlin.AgenspopClient
 import net.bitnine.ag3.agensalert.model.employee.Employee
 import net.bitnine.ag3.agensalert.model.employee.EmployeeRepository
-import net.bitnine.ag3.agensalert.model.event.EventQry
-import net.bitnine.ag3.agensalert.model.event.EventQryRepository
-import net.bitnine.ag3.agensalert.model.event.EventRow
-import net.bitnine.ag3.agensalert.model.event.EventRowRepository
-import org.reactivestreams.Publisher
-import org.springframework.beans.factory.annotation.Autowired
+import net.bitnine.ag3.agensalert.gremlin.AgenspopUtil
+import net.bitnine.ag3.agensalert.model.event.*
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.data.r2dbc.core.DatabaseClient
@@ -20,12 +16,15 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.stream.Stream
 import kotlin.random.Random
 
 
 @Component
-class DbConfig(@Autowired val connectionFactory: ConnectionFactory) {
+class DbConfig(
+    // @Autowired val connectionFactory: ConnectionFactory
+) {
 
     @Bean
     fun initEmpoyee(employeeRepository: EmployeeRepository, db: DatabaseClient) = ApplicationRunner {
@@ -53,56 +52,80 @@ class DbConfig(@Autowired val connectionFactory: ConnectionFactory) {
                 .subscribe{ println("init: $it")}
     }
 
+
     @Bean
     fun initEventRow(
+            aggRepository: EventAggRepository,
             rowRepository: EventRowRepository,
             qryRepository: EventQryRepository,
+            apiClient: AgenspopClient,
             db: DatabaseClient
     ) = ApplicationRunner {
         // **ref. https://www.baeldung.com/spring-data-r2dbc
 
-        val sdate: LocalDate = LocalDate.of(2018,1,1)
-        val edate: LocalDate = LocalDate.now()
+        val sdate: LocalDate = LocalDate.of(2018,5,10)
+        val edate: LocalDate = LocalDate.of(2019,5,10) //LocalDate.now()
         var rows = arrayListOf<EventRow>()
 
-        val mapper = jacksonObjectMapper()
-        val writer = mapper.writerFor(object: TypeReference<List<String>>(){})
-
+        val queries = qryRepository.findAllNotDeleted().collectList().block();
         for( dt in sdate..edate ){
-            val qid = Random.nextLong(101,109)
-            val etime = LocalTime.of(Random.nextInt(0, 24), Random.nextInt(0, 60))
-            val ids_cnt = Random.nextLong(1, 2000)
-            val row = EventRow(id = null, qid=qid, type="nodes",
-                    ids_cnt=ids_cnt, ids=randomIds(ids_cnt),
-                    labels=listOf("person", "software").joinToString(separator=","),
-                    edate=dt, etime=etime)
-            rows.add(row)
-        }
-        println("insert rows="+rows.size+"\n")
+            val fromDate = DateTimeFormatter.ofPattern("yyyyMMdd").format(dt)
+            val toDate = DateTimeFormatter.ofPattern("yyyyMMdd").format(dt.plusDays(1))
+             println("\nfrom '$fromDate' ~ to '$toDate' : ")
 
-// **NOTE :
-// Binding Values to Queries
-// https://github.com/spring-projects/spring-data-r2dbc/blob/master/src/main/asciidoc/reference/r2dbc-sql.adoc
-// ==> DATE 에 대한 bind 가 안됨 (통채로 문자열화 시켜 넣어야 작동) => IndexOutOfBoundsException
-//      .bind("from", LocalDate.of(2019,1,1))  => DATE '2019-01-01'
-//      DATE '2019-01-01'에서 'DATE' 없어도 괜찮음
+            for( query in queries!!){
+                if( query.id!! > 102 ) break;       // DEBUG
+
+                val results = apiClient.execGremlin(query.datasource, query.script, fromDate, toDate)
+                        .filter{ e-> !e.isNullOrEmpty() && e.containsKey("group") && e.containsKey("data") && e.containsKey("scratch") }
+                        .map{
+                            e-> mapOf<String,String>(
+                                "group" to e.get("group").toString(),
+                                "id" to (e.get("data") as Map<String,Any>).get("id").toString(),
+                                "label" to (e.get("data") as Map<String,Any>).get("label").toString(),
+                                "created" to (e.get("scratch") as Map<String,Any>).get("_\$\$created").toString()
+                        )
+                        }
+                        .filter{ e-> !e.isEmpty() }
+                        .collectList().block()
+
+                // ** QUESTION
+                //    없는 데이터를 넣을 필요가 있을까? 단순 모니터링인데..
+
+                if( results.isNullOrEmpty().not() ) {
+                    println("    ${query.id}: ${query.datasource}_${query.script} ==> ${results!!.size}")
+                    val row = AgenspopUtil.makeRowFromResults(dt, query, results!!)
+                    rows.add(row)
+                }
+//                else{
+//                    val emptyRow = EventRow(id = null, qid=query.id!!, type=null,
+//                            ids_cnt=0L, ids="", labels="",
+//                            edate= dt, etime= LocalTime.now())
+//                    rows.add(emptyRow)
+//                }
+            }
+
+        }
+        println("\n\ninsert rows="+rows.size+"\n")
 
         val initAgg = db.execute(
-//      -- truncate table event_agg;
-            """
-delete from event_agg where edate >= DATE '2019-01-01'
-;                
+"""truncate table event_agg;
+-- delete from event_agg where edate >= DATE '2018-01-01'
+;
 merge into event_agg(id, edate, qid, type, labels, row_cnt, ids_cnt)
-select TRANSACTION_ID(), edate, qid, type, listagg(labels,','), count(id), sum(ids_cnt)
+select TRANSACTION_ID(), edate, qid, listagg(type,','), listagg(labels,','), count(id), sum(ids_cnt)
 from event_row
-where edate >= DATE '2019-01-01'
-group by edate, qid, type
-order by edate, qid, type
-;            """
+where type is not null and edate >= DATE '2018-05-10'
+group by edate, qid
+order by edate, qid
+;"""
         )
 
         val saveAll = rowRepository.saveAll(Flux.fromStream(rows.stream()))
-        saveAll.then(initAgg.then()).subscribe({},{
+
+        saveAll.then(initAgg.then()).subscribe({
+            println("** Success: $it")
+        },{
             println("** Error: $it")
         },{
             println("** Completed: $it")

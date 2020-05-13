@@ -101,9 +101,7 @@
       <div class="position-relative form-group"><label for="exampleSelect">Datasource</label>
         <select name="queryDatasource" id="queryDatasource" class="form-control"
                 formControlName="datasource">
-          <option>modern</option>
-          <option>northwind</option>
-          <option>airroutes</option>
+          <option [value]="datasource" *ngFor="let datasource of datasources">{{datasource}}</option>
         </select>
       </div>
       <div class="position-relative form-group"><label for="exampleText">Query</label>

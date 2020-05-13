@@ -48,11 +48,13 @@ class WebApiConfiguration {
         GET("/agens/datasources", agenspopHandler::findDatasources)
         GET("/agens/vertices", agenspopHandler::findVertices)
         GET("/agens/edges", agenspopHandler::findEdges)
-        GET("/agens/neighbors", agenspopHandler::findNeighbors)
+        GET("/agens/neighbors", agenspopHandler::findNeighborsOfOne)
+        POST("/agens/neighbors", agenspopHandler::findNeighborsOfGrp)
         POST("/agens/connected_edges", agenspopHandler::findConnectedEdges)
         POST("/agens/connected_vertices", agenspopHandler::findConnectedVertices)
         POST("/agens/elements", agenspopHandler::findElements)
         POST("/agens/gremlin", agenspopHandler::execGremlin)
+        POST("/agens/gremlin/range", agenspopHandler::execGremlinWithRange)
     }
 
     @Bean
@@ -65,8 +67,7 @@ class WebApiConfiguration {
         GET("/queries/{id}", qryHandler::findOne)
         POST("/queries", qryHandler::addOne)
         PUT("/queries/{id}", qryHandler::updateOne)
-        DELETE("/queries/{id}", qryHandler::removeOne)
-//        DELETE("/queries/{id}", qryHandler::deleteOne)
+//        DELETE("/queries/{id}", qryHandler::removeOne)
     }
 
     @Bean
@@ -77,7 +78,7 @@ class WebApiConfiguration {
         GET("/rows/{id}", rowHandler::findOne)
         POST("/rows", rowHandler::addOne)
         PUT("/rows/{id}", rowHandler::updateOne)
-        DELETE("/rows/{id}", rowHandler::deleteOne)
+//        DELETE("/rows/{id}", rowHandler::deleteOne)
     }
 
     @Bean
@@ -89,7 +90,7 @@ class WebApiConfiguration {
         GET("/aggs/{id}", aggHandler::findOne)
         POST("/aggs", aggHandler::addOne)
         PUT("/aggs/{id}", aggHandler::updateOne)
-        DELETE("/aggs/{id}", aggHandler::deleteOne)
+//        DELETE("/aggs/{id}", aggHandler::deleteOne)
     }
 }
 

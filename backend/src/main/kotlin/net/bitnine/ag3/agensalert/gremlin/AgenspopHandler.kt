@@ -45,7 +45,7 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
             Flux.concat( client.findVertices(datasource, ids), client.findEdges(datasource, ids) ).asFlow()
 
  */
-    suspend fun findNeighbors(request: ServerRequest): ServerResponse {
+    suspend fun findNeighborsOfOne(request: ServerRequest): ServerResponse {
         val criterias = request.queryParams()
         return when {
             criterias.isEmpty() -> ServerResponse.badRequest().json()
@@ -55,15 +55,40 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
                 val vid = criterias.getFirst("q")
                 if (datasource.isNullOrBlank() || vid.isNullOrBlank()) {
                     ServerResponse.badRequest().json()
-                            .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                            .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value: "
                                     +"datasource, q"))
                 } else {
                     ServerResponse.ok().json()
-                            .bodyValueAndAwait(service.findNeighbors(datasource,vid)!!)
+                            .bodyValueAndAwait(service.findNeighborsOfOne(datasource,vid)!!)
                 }
             }
             else -> ServerResponse.badRequest().json()
                             .bodyValueAndAwait(ErrorMessage("Incorrect search criteria"))
+        }
+    }
+
+    suspend fun findNeighborsOfGrp(request: ServerRequest): ServerResponse {
+        val params = try {
+            request.bodyToMono<Map<String,String>>().awaitFirstOrNull()
+        } catch (e: Exception) {
+            logger.error("Decoding body error", e)
+            null
+        }
+
+        return if (params == null) {
+            ServerResponse.badRequest().json()
+                    .bodyValueAndAwait(ErrorMessage("Search must have query params"))
+        } else {
+            val datasource = params.get("datasource")
+            val ids:List<String>? = params.get("q")?.split(",")
+            if (datasource.isNullOrBlank() || ids.isNullOrEmpty()) {
+                ServerResponse.badRequest().json()
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value: "
+                                +"datasource, q"))
+            } else {
+                ServerResponse.ok().json()
+                        .bodyAndAwait(service.findNeighborsOfGrp(datasource,ids)!!)
+            }
         }
     }
 
@@ -83,7 +108,7 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
             val ids:List<String>? = params.get("q")?.split(",")
             if (datasource.isNullOrBlank() || ids.isNullOrEmpty()) {
                 ServerResponse.badRequest().json()
-                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value: "
                                 +"datasource, q"))
             } else {
                 ServerResponse.ok().json()
@@ -108,7 +133,7 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
             val ids:List<String>? = params.get("q")?.split(",")
             if (datasource.isNullOrBlank() || ids.isNullOrEmpty()) {
                 ServerResponse.badRequest().json()
-                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value: "
                                 +"datasource, q"))
             } else {
                 ServerResponse.ok().json()
@@ -127,7 +152,7 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
                 val ids:List<String>? = criterias.getFirst("q")?.split(",")
                 if (datasource.isNullOrBlank() || ids.isNullOrEmpty()) {
                     ServerResponse.badRequest().json()
-                            .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                            .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value: "
                                     +"datasource, q"))
                 } else {
                     ServerResponse.ok().json()
@@ -149,7 +174,7 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
                 val ids:List<String>? = criterias.getFirst("q")?.split(",")
                 if (datasource.isNullOrBlank() || ids.isNullOrEmpty()) {
                     ServerResponse.badRequest().json()
-                            .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                            .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value: "
                                     +"datasource, q"))
                 } else {
                     ServerResponse.ok().json()
@@ -177,7 +202,7 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
             val ids:List<String>? = params.get("q")?.split(",")
             if (datasource.isNullOrBlank() || ids.isNullOrEmpty()) {
                 ServerResponse.badRequest().json()
-                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value: "
                                 +"datasource, q"))
             } else {
                 ServerResponse.ok().json()
@@ -201,11 +226,37 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
             val script = params.get("q")
             if (datasource.isNullOrBlank() || script.isNullOrBlank()) {
                 ServerResponse.badRequest().json()
-                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value:"
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value: "
                                 +"datasource, q"))
             } else {
                 ServerResponse.ok().json()
                         .bodyAndAwait(service.execGremlin(datasource,script)!!)
+            }
+        }
+    }
+
+    suspend fun execGremlinWithRange(request: ServerRequest): ServerResponse {
+        val params = try {
+            request.bodyToMono<Map<String,String>>().awaitFirstOrNull()
+        } catch (e: Exception) {
+            logger.error("Decoding body error", e)
+            null
+        }
+        return if (params == null) {
+            ServerResponse.badRequest().json()
+                    .bodyValueAndAwait(ErrorMessage("Search must have query params"))
+        } else {
+            val datasource = params.get("datasource")
+            val script = params.get("q")
+            val fromDate = params.get("from")
+            val toDate = params.get("to")
+            if (datasource.isNullOrBlank() || script.isNullOrBlank() || fromDate.isNullOrBlank()) {
+                ServerResponse.badRequest().json()
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value: "
+                                +"datasource, q, from"))
+            } else {
+                ServerResponse.ok().json()
+                        .bodyAndAwait(service.execGremlin(datasource,script,fromDate,toDate)!!)
             }
         }
     }

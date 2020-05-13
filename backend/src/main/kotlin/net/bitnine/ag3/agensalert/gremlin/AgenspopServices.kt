@@ -11,8 +11,11 @@ class AgenspopService(private val client: AgenspopClient){
     suspend fun findDatasources() =
             client.findDatasources().awaitFirstOrNull()
 
-    suspend fun findNeighbors(datasource:String, vid:String) =
-            client.findNeighbors(datasource, vid).awaitFirstOrNull()
+    suspend fun findNeighborsOfOne(datasource:String, vid:String) =
+            client.findNeighborsOfOne(datasource, vid).awaitFirstOrNull()
+
+    suspend fun findNeighborsOfGrp(datasource:String, ids:List<String>) =
+            client.findNeighborsOfGrp(datasource, ids).asFlow()
 
     suspend fun findConnectedEdges(datasource:String, ids: List<String>) =
             client.findConnectedEdges(datasource, ids).asFlow()
@@ -31,5 +34,8 @@ class AgenspopService(private val client: AgenspopClient){
 
     suspend fun execGremlin(datasource:String, script: String) =
             client.execGremlin(datasource, script).asFlow()
+
+    suspend fun execGremlin(datasource:String, script: String, fromDate:String, toDate:String?=null) =
+            client.execGremlin(datasource, script, fromDate, toDate).asFlow()
 
 }

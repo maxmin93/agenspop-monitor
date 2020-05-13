@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS event_qry(
     active_yn BOOLEAN NOT NULL DEFAULT TRUE,
     datasource VARCHAR(100) NOT NULL,               -- datasource
     name VARCHAR(1000) NOT NULL,                    -- name
-    query VARCHAR(2000) NOT NULL,                   -- gremlin query
+    script VARCHAR(2000) NOT NULL,                  -- gremlin query
     cr_date DATE DEFAULT CURRENT_DATE(),            -- create date
     up_date DATE DEFAULT CURRENT_DATE()             -- update date
 );
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS event_row(
     id BIGINT AUTO_INCREMENT(101) PRIMARY KEY,
     qid INT NOT NULL,
 --    type ENUM('nodes','edges') NOT NULL DEFAULT 'nodes',
-    type VARCHAR(10) NOT NULL DEFAULT 'nodes',
+    type VARCHAR(10) NULL,                          -- DEFAULT 'unknown',
 --    labels ARRAY NOT NULL DEFAULT (),             -- labels
 --    ids ARRAY NOT NULL DEFAULT (),                -- ids
     labels VARCHAR(2000) NOT NULL DEFAULT '',       -- joinToString
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS event_agg(
     id INT AUTO_INCREMENT(101) PRIMARY KEY,
     edate DATE DEFAULT CURRENT_DATE(),
     qid INT NOT NULL DEFAULT 0,                     -- 0 means total qids
-    type VARCHAR(10) NOT NULL,                      -- nodes, edges
+    type VARCHAR(10) NULL,                          -- nodes, edges
 --    labels ARRAY NOT NULL DEFAULT (),             -- labels : array of array
     labels VARCHAR(2000) NOT NULL DEFAULT '',       -- joinToString
     row_cnt INT NOT NULL DEFAULT 0,                 -- # of records

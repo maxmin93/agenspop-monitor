@@ -19,6 +19,7 @@ import java.util.concurrent.Executor
 class ScheduleTasks(@Autowired val monitorProperties: MonitorProperties) {
 
     private val logger = LoggerFactory.getLogger(ScheduleTasks::class.java)
+    private val dtFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
     /**
      * This @Schedule annotation run every 5 seconds in this case. It can also
@@ -37,9 +38,9 @@ class ScheduleTasks(@Autowired val monitorProperties: MonitorProperties) {
     fun reportCurrSecond(){
         val currDateTime = LocalDateTime.now()
         val truncatedDateTime = currDateTime.plusNanos(300).truncatedTo(ChronoUnit.SECONDS)
-        logger.info("every 10 seconds : now ${DateTimeFormatter.ISO_LOCAL_TIME.format(currDateTime)} => ${DateTimeFormatter.ISO_LOCAL_TIME.format(truncatedDateTime)}")
+        val minus30sec = truncatedDateTime.minusSeconds(30)
+        logger.info("every 30 seconds : from ${dtFormatter.format(minus30sec)} ~ to ${dtFormatter.format(truncatedDateTime)}")    }
     }
-}
 
 // https://github.com/ruslanys/sample-spring-boot-netty/blob/master/src/main/kotlin/me/ruslanys/config/ExecutorsConfig.kt
 
@@ -49,7 +50,7 @@ class ScheduleTasks(@Autowired val monitorProperties: MonitorProperties) {
 class ExecutorsConfig : SchedulingConfigurer, AsyncConfigurer {
 
     companion object {
-        private const val SCHEDULER_POOL_SIZE = 5
+        private const val SCHEDULER_POOL_SIZE = 10
         private const val ASYNC_POOL_SIZE = 10
     }
 

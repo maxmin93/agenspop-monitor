@@ -31,6 +31,8 @@ export interface ILabel {
   color?: string;                 // node: background-color, edge: target-arrow-color
 }
 
+export const CREATED_TAG:string = '_$$created';
+
 export interface IElement {
   group: string;                  // group = {'nodes', 'edges'}
   data: {
@@ -51,6 +53,7 @@ export interface IElement {
     _label?: ILabel;
     _source?: IElement;           // for only EDGE
     _target?: IElement;           // for only EDGE
+    _$$created?: string;           // yyyy-MM-dd HH:mm:ss
   };
 };
 
