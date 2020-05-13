@@ -52,7 +52,7 @@ class DbConfig(
                 .subscribe{ println("init: $it")}
     }
 
-
+/*
     @Bean
     fun initEventRow(
             aggRepository: EventAggRepository,
@@ -64,7 +64,7 @@ class DbConfig(
         // **ref. https://www.baeldung.com/spring-data-r2dbc
 
         val sdate: LocalDate = LocalDate.of(2018,5,10)
-        val edate: LocalDate = LocalDate.of(2019,5,10) //LocalDate.now()
+        val edate: LocalDate = LocalDate.now()  // LocalDate.of(2019,5,10)
         var rows = arrayListOf<EventRow>()
 
         val queries = qryRepository.findAllNotDeleted().collectList().block();
@@ -74,8 +74,6 @@ class DbConfig(
              println("\nfrom '$fromDate' ~ to '$toDate' : ")
 
             for( query in queries!!){
-                if( query.id!! > 102 ) break;       // DEBUG
-
                 val results = apiClient.execGremlin(query.datasource, query.script, fromDate, toDate)
                         .filter{ e-> !e.isNullOrEmpty() && e.containsKey("group") && e.containsKey("data") && e.containsKey("scratch") }
                         .map{
@@ -131,7 +129,7 @@ order by edate, qid
             println("** Completed: $it")
         })
     }
-
+*/
     fun randomIds(size: Long): String {
         var ids = arrayListOf<String>()
         var count = size

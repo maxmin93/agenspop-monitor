@@ -8,6 +8,8 @@ target/
 HELP.md
 .mvn/
 *.pid
+### H2 ###
+*.mv.db
 
 ### STS ###
 .apt_generated
