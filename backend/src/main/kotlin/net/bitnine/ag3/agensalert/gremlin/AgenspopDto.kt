@@ -4,11 +4,11 @@ package net.bitnine.ag3.agensalert.gremlin
 // interface AgensElement(
 
 abstract class AgensElement(
-        open val created: String,
         open val id: String,
         open val datasource: String,
         open val label: String,
-        open val properties: List<AgensProperty> = emptyList()
+        open val properties: Map<String,Any> = emptyMap(),
+        open val scratch: Map<String,Any> = emptyMap()
 )
 
 data class AgensProperty(
@@ -18,21 +18,21 @@ data class AgensProperty(
 )
 
 data class AgensVertex(
-        override val created: String,
         override val id: String,
         override val datasource: String,
         override val label: String,
-        override val properties: List<AgensProperty> = emptyList()
+        override val properties: Map<String,Any> = emptyMap(),
+        override val scratch: Map<String,Any> = emptyMap()
 )
-: AgensElement(created, id, datasource, label, properties)
+: AgensElement(id, datasource, label, properties, scratch)
 
 data class AgensEdge(
-        override val created: String,
         override val id: String,
         override val datasource: String,
         override val label: String,
-        override val properties: List<AgensProperty> = emptyList(),
+        override val properties: Map<String,Any> = emptyMap(),
+        override val scratch: Map<String,Any> = emptyMap(),
         val src: String,
         val dst: String
 )
-: AgensElement(created, id, datasource, label, properties)
+: AgensElement(id, datasource, label, properties, scratch)

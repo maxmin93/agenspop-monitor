@@ -1,6 +1,6 @@
 package net.bitnine.ag3.agensalert.config
 
-import net.bitnine.ag3.agensalert.handler.PrimeNumbersHandler
+import net.bitnine.ag3.agensalert.socket.PrimeNumbersHandler
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
@@ -10,6 +10,7 @@ import org.springframework.web.reactive.HandlerMapping
 import org.springframework.web.reactive.config.EnableWebFlux
 import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping
 import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAdapter
+
 
 @Configuration
 @EnableWebFlux

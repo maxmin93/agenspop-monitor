@@ -1,46 +1,40 @@
 package net.bitnine.ag3.agensalert.config
 
 import net.bitnine.ag3.agensalert.gremlin.AgenspopHandler
-import net.bitnine.ag3.agensalert.model.event.EventAggHandler
-import net.bitnine.ag3.agensalert.model.event.EventQryHandler
-import net.bitnine.ag3.agensalert.model.event.EventRowHandler
-import net.bitnine.ag3.agensalert.model.user.UserHandler
+import net.bitnine.ag3.agensalert.event.EventAggHandler
+import net.bitnine.ag3.agensalert.event.EventQryHandler
+import net.bitnine.ag3.agensalert.event.EventRowHandler
+
+import org.h2.tools.Server
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.coRouter
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilter
 import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Mono
+import java.sql.SQLException
+
 
 @Configuration
 @EnableR2dbcRepositories
-class WebApiConfiguration {
+class WebApiConfiguration(private val properties: MonitorProperties) {
 
-//    @Bean(initMethod = "start", destroyMethod = "stop")
-//    @Throws(SQLException::class)
-//    fun h2WebConsoleServer(): Server {
-//        return Server.createWebServer("-web", "-webAllowOthers", "-webDaemon")
-//    }
+    // H2 WebConsole
+    // url => http://localhost:<h2ConsolePort>
 
-    @Bean
-    fun userRoute(userHandler: UserHandler) = coRouter {
-        GET("/users/hello", userHandler::hello)
-        GET("/users", userHandler::findAll)
-        GET("/users/search", userHandler::search)
-        GET("/users/{id}", userHandler::findUser)
-        POST("/users", userHandler::addUser)
-        PUT("/users/{id}", userHandler::updateUser)
-        DELETE("/users/{id}", userHandler::deleteUser)
+    @Bean(initMethod = "start", destroyMethod = "stop")
+    @Throws(SQLException::class)
+    fun h2WebConsoleServer(): Server {
+        return Server.createWebServer("-web", "-webAllowOthers", "-webDaemon", "-webPort", properties.h2ConsolePort)
     }
 
-// **NOTE : webflux-functional
-// https://github.com/spring-projects/spring-framework/blob/master/src/docs/asciidoc/web/webflux-functional.adoc#serverresponse
+    // **NOTE : webflux-functional
+    // https://github.com/spring-projects/spring-framework/blob/master/src/docs/asciidoc/web/webflux-functional.adoc#serverresponse
 
     @Bean
     fun agenspopRoute(agenspopHandler: AgenspopHandler) = coRouter {
@@ -94,10 +88,10 @@ class WebApiConfiguration {
     }
 }
 
+///////////////////////////////////////////////////////
 
 @Component
 class CorsFilter : WebFilter {
-    // Mono<Void> filter(ServerWebExchange var1, WebFilterChain var2);
     override fun filter(ctx: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
         if (ctx != null) {
             ctx.response.headers.add("Access-Control-Allow-Origin", "*")

@@ -1,11 +1,24 @@
-package net.bitnine.ag3.agensalert.storage
-
-import net.bitnine.ag3.agensalert.exception.InvalidUsernameException
+package net.bitnine.ag3.agensalert.socket
 
 import org.springframework.stereotype.Component
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
+
+interface UserStorage {
+
+    fun getUserBySessionId(sessionId: String): String?
+
+    fun removeUserBySessionId(sessionId: String): String?
+
+    fun getAllUsers(): Collection<String>
+
+    fun addUser(sessionId: String, username: String)
+
+    fun containsUsername(username: String): Boolean
+
+    fun containsSessionId(sessionId: String): Boolean
+}
 
 @Component
 class InMemoryUserStorage: UserStorage {
@@ -49,3 +62,7 @@ class InMemoryUserStorage: UserStorage {
         }
     }
 }
+
+// Exceptions about User
+class InvalidUsernameException(message: String): Exception(message)
+class NotAuthorizedUserException(message: String): Exception(message)

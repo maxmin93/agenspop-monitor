@@ -1,16 +1,14 @@
-package net.bitnine.ag3.agensalert.model.event
+package net.bitnine.ag3.agensalert.event
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
-import net.bitnine.ag3.agensalert.gremlin.AgenspopService
+
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.awaitFirstOrNull
-
 import org.springframework.stereotype.Service
-import reactor.core.Disposable
-import reactor.kotlin.core.publisher.toFlux
 import java.time.LocalDate
+
 
 @Service
 class EventQryService(private val repo: EventQryRepository) {
@@ -120,4 +118,6 @@ class EventAggService(
 
         return dateRange
     }
+
 }
+

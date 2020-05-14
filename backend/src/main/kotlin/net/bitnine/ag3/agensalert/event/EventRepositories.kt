@@ -1,15 +1,12 @@
-package net.bitnine.ag3.agensalert.model.event
+package net.bitnine.ag3.agensalert.event
 
-import kotlinx.coroutines.flow.Flow
-import org.springframework.data.annotation.Id
 import org.springframework.data.r2dbc.repository.Modifying
 import org.springframework.data.r2dbc.repository.Query
-import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.repository.reactive.ReactiveCrudRepository
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.time.LocalDate
-import java.util.*
+
 
 interface EventQryRepository : ReactiveCrudRepository<EventQry, Long> {
 

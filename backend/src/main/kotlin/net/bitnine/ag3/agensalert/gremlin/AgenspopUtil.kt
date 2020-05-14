@@ -1,12 +1,14 @@
 package net.bitnine.ag3.agensalert.gremlin
 
-import net.bitnine.ag3.agensalert.model.event.EventQry
-import net.bitnine.ag3.agensalert.model.event.EventQryRepository
-import net.bitnine.ag3.agensalert.model.event.EventRow
+import net.bitnine.ag3.agensalert.event.EventQry
+import net.bitnine.ag3.agensalert.event.EventQryRepository
+import net.bitnine.ag3.agensalert.event.EventRow
+
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+
 
 object AgenspopUtil {
 
@@ -24,7 +26,7 @@ object AgenspopUtil {
     }
 
     @JvmStatic
-    fun makeRowFromResults(dt:LocalDate, qry:EventQry, results:List<Map<String,Any>>): EventRow{
+    fun makeRowFromResults(dt:LocalDate, qry: EventQry, results:List<Map<String,Any>>): EventRow {
         val groups: Map<String,Int> = results
                 .groupingBy { it.get("group").toString() }.eachCount()
         val groupValue = groups.maxBy { it.value }!!.key
@@ -46,10 +48,10 @@ object AgenspopUtil {
 //        println("    --> ids.cnt = ${ids.size}, ${if (ids.size > 0) ids.first()+" .." else "<none>"}")
 //        println("    --> created = ${minDate} ~ ${maxDate}")
 
-        return EventRow(id = null, qid=qry.id!!, type=groupValue,
-                ids_cnt=ids.size.toLong(), ids=ids.joinToString(separator=","),
-                labels=labels.keys.joinToString(separator=","),
-                edate= str2date(minDate), etime=LocalTime.now())
+        return EventRow(id = null, qid = qry.id!!, type = groupValue,
+                ids_cnt = ids.size.toLong(), ids = ids.joinToString(separator = ","),
+                labels = labels.keys.joinToString(separator = ","),
+                edate = str2date(minDate), etime = LocalTime.now())
     }
 
     @JvmStatic
@@ -79,14 +81,14 @@ object AgenspopUtil {
 
             print("${results?.size}")
 
-            var row:EventRow
+            var row: EventRow
             if( results.isNullOrEmpty().not() ) {
                 row = AgenspopUtil.makeRowFromResults(dt, query, results!!)
             }
             else{
-                row = EventRow(id = null, qid=query.id!!, type="nodes",
-                        ids_cnt=0L, ids="", labels="",
-                        edate=dt, etime= LocalTime.now())
+                row = EventRow(id = null, qid = query.id!!, type = "nodes",
+                        ids_cnt = 0L, ids = "", labels = "",
+                        edate = dt, etime = LocalTime.now())
             }
         }
     }

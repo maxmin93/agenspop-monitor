@@ -1,9 +1,7 @@
-package net.bitnine.ag3.agensalert.model.event
+package net.bitnine.ag3.agensalert.event
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
@@ -86,14 +84,6 @@ class EventDateRange(
         val cnt: Long
 )
 
-// rest models
-data class EventErrorMessage(val message: String)
-
-data class EventUpdateMessage(
-        val qid: Long,
-        val result: Any
-)
-
 data class EventDTO(
         val edate: LocalDate,
         val qid: Long,
@@ -102,10 +92,20 @@ data class EventDTO(
         val ids_cnt: Long = 0
 )
 
-fun EventAgg.toDTO():EventDTO = run {
+fun EventAgg.toDTO(): EventDTO = run {
     val mapper = jacksonObjectMapper()
     val reader = mapper.readerFor(object: TypeReference<List<String>>(){})
     val labels:List<String> = reader.readValue(labels)
 
     EventDTO(this.edate, this.qid, this.type, labels, this.ids_cnt)
 }
+
+////////////////////////////////////////////////////
+
+// for rest models
+data class ErrorMessage(val message: String)
+
+data class EventUpdateMessage(
+        val qid: Long,
+        val result: Any
+)

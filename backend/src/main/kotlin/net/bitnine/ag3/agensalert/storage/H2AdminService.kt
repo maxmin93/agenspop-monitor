@@ -1,66 +1,47 @@
-package net.bitnine.ag3.agensalert.config
+package net.bitnine.ag3.agensalert.storage
 
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import io.r2dbc.spi.ConnectionFactory
+import net.bitnine.ag3.agensalert.event.EventAggRepository
+import net.bitnine.ag3.agensalert.event.EventQryRepository
+import net.bitnine.ag3.agensalert.event.EventRow
+import net.bitnine.ag3.agensalert.event.EventRowRepository
 import net.bitnine.ag3.agensalert.gremlin.AgenspopClient
-import net.bitnine.ag3.agensalert.model.employee.Employee
-import net.bitnine.ag3.agensalert.model.employee.EmployeeRepository
 import net.bitnine.ag3.agensalert.gremlin.AgenspopUtil
-import net.bitnine.ag3.agensalert.model.event.*
-import org.springframework.boot.ApplicationRunner
-import org.springframework.context.annotation.Bean
+
 import org.springframework.data.r2dbc.core.DatabaseClient
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.util.stream.Stream
-import kotlin.random.Random
+import javax.annotation.PostConstruct
 
 
-@Component
-class DbConfig(
-    // @Autowired val connectionFactory: ConnectionFactory
-) {
+@Service
+class H2AdminService(
+        private val aggRepository: EventAggRepository,
+        private val rowRepository: EventRowRepository,
+        private val client: AgenspopClient
+){
 
-    @Bean
-    fun initEmpoyee(employeeRepository: EmployeeRepository, db: DatabaseClient) = ApplicationRunner {
-
-        val initDb = db.execute {
-            """
-                DROP TABLE if exists employee;
-                CREATE TABLE employee (
-                    id SERIAL PRIMARY KEY,
-                    first_name VARCHAR(255) NOT NULL,
-                    last_name VARCHAR(255) NOT NULL
-                );
-            """
-        }
-
-        val stream = Stream.of(
-                Employee(null, "Petros", "S"),
-                Employee(null, "Christos", "M")
-        )
-        val saveAll = employeeRepository.saveAll(Flux.fromStream(stream))
-
-        initDb
-                .then()
-                .thenMany(saveAll)
-                .subscribe{ println("init: $it")}
+    @PostConstruct
+    private fun init(){
+        // too early call before created Table
     }
 
-/*
-    @Bean
-    fun initEventRow(
+    suspend fun getQryTargets(qid: Long){
+        aggRepository.findByQid(qid).collectList().subscribe {
+            if(it.isEmpty()) return@subscribe
+
+            println("agg results of ${qid} = ${it.size}")
+        }
+    }
+
+    suspend fun initEventRow(
             aggRepository: EventAggRepository,
             rowRepository: EventRowRepository,
             qryRepository: EventQryRepository,
             apiClient: AgenspopClient,
             db: DatabaseClient
-    ) = ApplicationRunner {
+    ) {
         // **ref. https://www.baeldung.com/spring-data-r2dbc
 
         val sdate: LocalDate = LocalDate.of(2018,5,10)
@@ -71,7 +52,7 @@ class DbConfig(
         for( dt in sdate..edate ){
             val fromDate = DateTimeFormatter.ofPattern("yyyyMMdd").format(dt)
             val toDate = DateTimeFormatter.ofPattern("yyyyMMdd").format(dt.plusDays(1))
-             println("\nfrom '$fromDate' ~ to '$toDate' : ")
+            println("\nfrom '$fromDate' ~ to '$toDate' : ")
 
             for( query in queries!!){
                 val results = apiClient.execGremlin(query.datasource, query.script, fromDate, toDate)
@@ -107,7 +88,7 @@ class DbConfig(
         println("\n\ninsert rows="+rows.size+"\n")
 
         val initAgg = db.execute(
-"""truncate table event_agg;
+                """truncate table event_agg;
 -- delete from event_agg where edate >= DATE '2018-01-01'
 ;
 merge into event_agg(id, edate, qid, type, labels, row_cnt, ids_cnt)
@@ -126,18 +107,8 @@ order by edate, qid
         },{
             println("** Error: $it")
         },{
-            println("** Completed: $it")
+            println("** Completed!")
         })
-    }
-*/
-    fun randomIds(size: Long): String {
-        var ids = arrayListOf<String>()
-        var count = size
-        while( count > 0 ){
-            ids.add("modern_"+Random.nextInt(1, 100))
-            count -= 1
-        }
-        return ids.joinToString(separator=",")      //writer.writeValueAsString(ids)
     }
 
     operator fun ClosedRange<LocalDate>.iterator() : Iterator<LocalDate> {
@@ -157,26 +128,5 @@ order by edate, qid
                 return value
             }
         }
-    }
-
-    @Bean
-    fun initConnTest(connectionFactory: ConnectionFactory) = ApplicationRunner {
-
-        // **NOTE :
-        // https://www.baeldung.com/r2dbc
-
-        Mono.from(connectionFactory.create())
-                .flatMap{ c ->
-                    Mono.from(c
-                        .createStatement("select * from event_row where id = $1")
-                        .bind("$1", 101)
-                        .execute()
-                    )
-                    .doFinally{ st ->       // st: SignalType
-                        c?.close()
-                        println("** close: initEventsList")
-                    }
-                }
-
     }
 }
