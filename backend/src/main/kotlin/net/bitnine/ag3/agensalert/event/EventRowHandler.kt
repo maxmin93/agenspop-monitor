@@ -32,25 +32,18 @@ class EventRowHandler(@Autowired val service: EventRowService) {
             criterias.isEmpty() -> ServerResponse.badRequest().json().bodyValueAndAwait(
                     ErrorMessage("Search must have query params"))
             criterias.contains("from") -> {
-                val from = criterias.getFirst("from")
-                if (from.isNullOrBlank()) {
+                val qid = criterias.getFirst("qid")
+                val fromValue = criterias.getFirst("from")?.toString()
+                val toValue = criterias.getFirst("to")?.toString()
+
+                if (qid.isNullOrBlank() || qid.toLongOrNull() == null || fromValue.isNullOrBlank()) {
                     ServerResponse.badRequest().json().bodyValueAndAwait(
-                            ErrorMessage("Incorrect search criteria value"))
+                            ErrorMessage("Incorrect search criteria value: qid, from"))
                 }
                 else {
-                    val format: String? =if( criterias.contains("format") ) criterias.getFirst("format") else null
-                    val to: String? = if( criterias.contains("to") ) criterias.getFirst("to") else null
-
-                    val rows = if( !format.isNullOrBlank() ){
-                        val formatter = DateTimeFormatter.ofPattern(format)
-                        service.findByDateTerms( LocalDate.parse(from, formatter),
-                                if( !to.isNullOrBlank()) LocalDate.parse(to, formatter) else null)
-                    }
-                    else{
-                        service.findByDateTerms( LocalDate.parse(from, DateTimeFormatter.ISO_DATE),
-                                if( !to.isNullOrBlank()) LocalDate.parse(to, DateTimeFormatter.ISO_DATE) else null)
-                    }
-                    ServerResponse.ok().json().bodyAndAwait(rows)
+                    ServerResponse.ok().json().bodyAndAwait(
+                            service.findEventsWithDateRange( qid.toLong(), fromValue, toValue)
+                    )
                 }
             }
             else -> ServerResponse.badRequest().json().bodyValueAndAwait(

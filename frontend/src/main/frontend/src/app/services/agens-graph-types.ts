@@ -31,7 +31,7 @@ export interface ILabel {
   color?: string;                 // node: background-color, edge: target-arrow-color
 }
 
-export const CREATED_TAG:string = '_$$created';
+export const CREATED_TAG:string = '_$$timestamp';
 
 export interface IElement {
   group: string;                  // group = {'nodes', 'edges'}

@@ -30,6 +30,10 @@ interface EventQryRepository : ReactiveCrudRepository<EventQry, Long> {
 
     @Query("SELECT q.* FROM event_qry q WHERE q.datasource = :datasource and q.delete_yn = false")
     fun findByDatasource(datasource: String): Flux<EventQry>
+
+    // **NOTE: not working ==> because repository must use TABLE mapping class
+    @Query("SELECT q.id, q.name, q.datasource, q.script, a.from_date, a.to_date, a.cnt FROM EVENT_QRY q LEFT OUTER JOIN (SELECT qid, min(edate) as from_date, max(edate) as to_date, count(edate) as cnt FROM EVENT_AGG GROUP BY qid) a ON q.id = a.qid WHERE q.id = :qid")
+    fun findDataRangeByQid(qid: Long): Mono<EventQryDateRange>
 }
 
 interface EventRowRepository : ReactiveCrudRepository<EventRow, Long> {
@@ -37,8 +41,8 @@ interface EventRowRepository : ReactiveCrudRepository<EventRow, Long> {
     @Query("SELECT r.* FROM event_row r WHERE r.qid = :qid order by id")
     fun findByQid(qid: Long): Flux<EventRow>
 
-    @Query("SELECT r.* FROM event_row r WHERE r.edate between :from and :to")
-    fun findAllByDateTerms(from: LocalDate, to: LocalDate? = LocalDate.now()): Flux<EventRow>
+    @Query("SELECT r.* FROM event_row r WHERE r.qid = :qid and r.edate between :from and :to order by id")
+    fun findAllByQidAndDateRange(qid: Long, from: LocalDate, to: LocalDate? = LocalDate.now()): Flux<EventRow>
 
     @Query("SELECT r.* FROM event_row r, event_qry q WHERE q.datasource = :datasource and q.id = r.qid order by r.edate, r.id")
     fun findAllByDatasource(datasource: String): Flux<EventRow>

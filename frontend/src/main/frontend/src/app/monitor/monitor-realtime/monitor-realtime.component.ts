@@ -1,17 +1,16 @@
 import { Component, ViewChild, ElementRef, NgZone, OnInit, AfterViewInit, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, from, of, forkJoin } from 'rxjs';
-import { map, share } from 'rxjs/operators';
+import { Observable, fromEvent } from 'rxjs';
+import { map, filter, debounceTime } from 'rxjs/operators';
 
 import { AmApiService } from '../../services/am-api.service';
 import { IAggregation, IQuery } from '../../services/agens-event-types';
 import { DATE_UTILS } from '../../services/agens-util-funcs';
 import { PALETTE_DARK, PALETTE_BRIGHT } from '../../utils/palette-colors';
 
-import { NgbModal, ModalDismissReasons, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import * as _ from 'lodash';
 
-import { IGraph, EMPTY_GRAPH, IElement, IUserEvent, ILabels, ILabel } from '../../services/agens-graph-types';
+import { IGraph, EMPTY_GRAPH, IElement, IUserEvent, ILabels, ILabel, CREATED_TAG } from '../../services/agens-graph-types';
 import { CY_STYLES } from '../../services/agens-cyto-styles';
 
 import * as am4core from "@amcharts/amcharts4/core";
@@ -47,10 +46,14 @@ const CY_CONFIG:any ={
 })
 export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
+  qid:number;
   aggregations:IAggregation[] = [];
-  query:any = { datasource: 'unknown', name: 'unknown', query: null, slicedQry: null };    // IQuery
+  query:any = {   // IQueryWithDateRange
+    id: null, name: 'unknown',
+    datasource: 'unknown', query: null, slicedQry: null,
+    from_date: null, to_date: null, cnt: 0
+  };
 
-  qid: number;
   chartData = {
     data: [],
     from: null,
@@ -75,7 +78,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   tappedTarget:any;
   tappedCount:number = 0;
 
-  heading = 'Realtime Monitor';
+  heading = 'History Monitor';
   subheading = 'This is an real-time monitor dashboard for Agenspop.';
   icon = 'pe-7s-plane icon-gradient bg-tempting-azure';
 
@@ -99,14 +102,15 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
       }
       this.qid = Number.parseInt(q);
 
-      this.amApiService.findQuery(this.qid).subscribe(r=>{
+      this.amApiService.findQueryWithDateRange(this.qid).subscribe(r=>{
         console.log('query:', r);
         if( !!r ){
           this.query = r;
-          if( this.query.query ){
-            this.query['slicedQry'] = this.query.query.substr(0,100);
+          if( this.query.script ){
+            this.query['slicedQry'] = this.query.script.substr(0,100);
             // load graph-data
-            this.loadQueryByGremlin(this.query.datasource, this.query.query);
+            if( this.query.cnt != null && this.query.cnt > 0 )
+            this.loadEventsWithDateRange(this.query.datasource, this.query.id, this.query.from_date, this.query.to_date);
           }
         }
       });
@@ -181,8 +185,9 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     // make any array
     //  - loop : min date ~ max date
     let fromDate = new Date(chartData['from'])
-    let dayCount = DATE_UTILS.diffDays(fromDate, new Date(chartData['to']));
-    for( let idx=0; idx <= dayCount; idx+=1 ){
+    fromDate.setDate( fromDate.getDate() - 1 )        // before one more day
+    let dayCount = DATE_UTILS.diffDays(fromDate, new Date(chartData['to']))+1;
+    for( let idx=0; idx <= dayCount; idx+=1 ){        // until one more day
       let curr = DATE_UTILS.afterDays(fromDate, idx);
       let currString = DATE_UTILS.toYYYYMMDD(curr);
       let row:any = { date: curr, value: 0 };
@@ -205,6 +210,20 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     let dateAxis = chart.xAxes.push(new am4charts.DateAxis());
     dateAxis.renderer.grid.template.location = 0;
     dateAxis.dateFormats.setKey("day", "yyyy-MM-dd");
+    // Handling axis zoom events via API
+    // https://www.amcharts.com/docs/v4/tutorials/handling-axis-zoom-events-via-api/
+    fromEvent(dateAxis.events, "startchanged").pipe(
+      // filter(ev=>ev['target'].hasOwnProperty('minZoomed') && ev['target']['minZoomed'] != null),
+      debounceTime(300)
+    ).subscribe(ev=>{
+      this.scrollEmitter.emit({target:'start', value:new Date(ev['target']['minZoomed'])});
+    });
+    fromEvent(dateAxis.events, "endchanged").pipe(
+      // filter(ev=>ev['target'].hasOwnProperty('maxZoomed') && ev['target']['maxZoomed'] != null),
+      debounceTime(300)
+    ).subscribe(ev=>{
+      this.scrollEmitter.emit({target:'end', value:new Date(ev['target']['maxZoomed'])});
+    });
 
     let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
     valueAxis.tooltip.disabled = true;
@@ -220,14 +239,6 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     let scrollbarX = new am4charts.XYChartScrollbar();
     scrollbarX.series.push(series);
     chart.scrollbarX = scrollbarX;
-    scrollbarX.startGrip.events.on("dragstop", e=>{
-      let time = dateAxis.xToValue(e.target.pixelX);
-      this.scrollEmitter.emit({target:'start', value:time});
-    });
-    scrollbarX.endGrip.events.on("dragstop", e=>{
-      let time = dateAxis.xToValue(e.target.pixelX);
-      this.scrollEmitter.emit({target:'end', value:time});
-    });
 
     return chart;
   }
@@ -264,38 +275,59 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     return labels;
   }
 
-  loadQueryByGremlin( datasource:string, script:string ){
-    let eles$:Observable<IElement[]> = this.amApiService.execGremlin(datasource, script);
+  loadEventsWithDateRange( datasource:string, qid:number, from_date: string, to_date: string ){
+    let eles$:Observable<IElement[]> = this.amApiService.findEventsWithDateRange(qid, from_date, to_date);
     eles$.subscribe(r=>{
         this.g.datasource = datasource;
 
         console.log("** gremlin =>", r);
-        let nodes = r.filter(e=>e.group == 'nodes').map(e=>{ e.scratch['_atype']='target'; return e; });
-        let edges = r.filter(e=>e.group == 'edges').map(e=>{ e.scratch['_atype']='target'; return e; });
+        let nodes = r.filter(e=>e.group == 'nodes').map(e=>{ e.scratch['_etype']='target'; return e; });
+        let edges = r.filter(e=>e.group == 'edges').map(e=>{ e.scratch['_etype']='target'; return e; });
+
+        // targets : nodes <= neighbor_nodes <= connected_edges
         if( nodes.length > 0 && edges.length == 0 ){
-          this.g.nodes = nodes;
-          this.g.labels.nodes = this.getLabels(nodes);
           // get connected edges of vertices
           let vids = nodes.map(e=>e.data.id);
-          this.amApiService.findConnectedEdges(datasource, vids).pipe(
-              map(e=>{ e.forEach(x=>x.scratch['_atype']='neighbor'); return e; })
-            ).subscribe(e=>{
-              this.g.edges = e;
-              this.g.labels.edges = this.getLabels(e);
+
+          this.amApiService.findNeighborVertices(this.g.datasource, vids).pipe(
+            map(e=>{ e.forEach(x=>x.scratch['_etype']='neighbor'); return e; })
+          ).subscribe(x=>{
+            let neighbors = x.filter(e=>e.group == 'nodes');
+            this.g.nodes = nodes.concat(neighbors)
+
+            let vids_with_neighbors = vids.concat( neighbors.map(e=>e.data.id) );
+            this.amApiService.findConnectedEdges(this.g.datasource, vids_with_neighbors).pipe(
+              map(e=>{ e.forEach(x=>x.scratch['_etype']='neighbor'); return e; })
+            ).subscribe(y=>{
+              this.g.edges = y.filter(e=>e.group == 'edges');
+              this.g.labels.edges = this.getLabels(this.g.edges);
+              this.g.labels.nodes = this.getLabels(this.g.nodes);
+              // create graph
               this.readyEmitter.emit(true);
             });
+          });
         }
+
+        // targets : edges <= connected_nodes <= connected_edges
         else if( nodes.length == 0 && edges.length > 0 ){
-          this.g.edges = edges;
-          this.g.labels.edges = this.getLabels(edges);
           // get connected vertices of edges
           let eids = edges.map(e=>e.data.id);
-          this.amApiService.findConnectedVertices(datasource, eids).pipe(
-              map(e=>{ e.forEach(x=>x.scratch['_atype']='neighbor'); return e; })
-            ).subscribe(e=>{
-              this.g.nodes = e;
-              this.g.labels.nodes = this.getLabels(e);
-              this.readyEmitter.emit(true);
+          this.amApiService.findConnectedVertices(this.g.datasource, eids).pipe(
+              map(e=>{ e.forEach(x=>x.scratch['_etype']='neighbor'); return e; })
+            ).subscribe(x=>{
+              this.g.nodes = x.filter(e=>e.group == 'nodes');
+              let vids = this.g.nodes.map(e=>e.data.id);
+
+              this.amApiService.findConnectedEdges(this.g.datasource, vids).pipe(
+                map(e=>{ e.forEach(x=>x.scratch['_etype']='neighbor'); return e; })
+              ).subscribe(y=>{
+                let connected_edges = y.filter(e=>e.group == 'edges' && !eids.includes(e.data.id));
+                this.g.edges = edges.concat( connected_edges );
+                this.g.labels.edges = this.getLabels(this.g.edges);
+                this.g.labels.nodes = this.getLabels(this.g.nodes);
+                // create graph
+                this.readyEmitter.emit(true);
+              });
             });
         }
       });
@@ -336,49 +368,47 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     if( e.scratch('_color') ){
       e.style('background-color', e.scratch('_color'));
     }
-    if( e.scratch('_atype') == 'target' ){
+    if( e.scratch('_etype') == 'target' ){
       e.style('opacity',1.0); e.style('label',e.id());
       e.style('font-size',6); e.style('text-opacity',0.6);
     }
-    else e.style('opacity',0.05);
+    else e.style('opacity',0.1);
   }
   private setStyleEdge(e:any){
     if( e.scratch('_color') && e.scratch('_color').length == 2 ){
       e.style('target-arrow-color', e.scratch('_color')[1]);
       e.style('line-gradient-stop-colors', e.scratch('_color'));
     }
-    if( e.scratch('_atype') == 'target' ){
+    if( e.scratch('_etype') == 'target' ){
       e.style('opacity',1.0); e.style('label',e.id());
       e.style('font-size',6); e.style('text-opacity',0.6); e.style('text-rotation','autorotate'); e.style('text-margin-y','10px');
     }
-    else e.style('opacity',0.05);
+    else e.style('opacity',0.1);
   }
 
   private showGraphByDateTerms(cy:any, start_dt:Date, end_dt:Date){
+    let startDate = DATE_UTILS.toYYYYMMDD(start_dt)+' 00:00:00';
+    let endDate = DATE_UTILS.toYYYYMMDD(end_dt)+' 00:00:00';
     let targets = cy.elements()
-                    .filter(e=>e.scratch('_atype')=='target' && !!e.scratch('_adate'))
-                    .filter(e=>e.scratch('_adate') >= start_dt && e.scratch('_adate') <= end_dt);
-    let connected_edges = targets.filter(e=>e.isNode()).connectedEdges();
-    let connected_nodes = targets.filter(e=>e.isEdge()).connectedNodes();
+                    .filter(e=>e.scratch('_etype')=='target' && !!e.scratch(CREATED_TAG))
+                    .filter(e=>e.scratch(CREATED_TAG) >= startDate && e.scratch(CREATED_TAG) <= endDate);
 
-    let visible_eles = targets.union(connected_edges).union(connected_nodes);
-    let invisible_eles = cy.elements().difference(visible_eles);
+    // if targets are nodes, include neighbors to visible set
+    let neighbors = targets.filter(e=>e.isNode()).neighborhood().filter(e=>e.scratch('_etype')!='target');
+    // if targets are edges, include connected nodes to visible set
+    let connected_nodes = targets.filter(e=>e.isEdge()).connectedNodes().filter(e=>e.scratch('_etype')!='target');
+    // set visible nodes
+    let visible_nodes = targets.union(neighbors).union(connected_nodes);
+    // get connected edges
+    let connected_edges = visible_nodes.edgesWith(visible_nodes).filter(e=>e.scratch('_etype')!='target');
+
+    let visible_eles = visible_nodes.union(connected_edges);
+    let invisible_eles = cy.elements().difference(visible_eles);    // rest elements
     // console.log('showGraphByDateTerms:', visible_eles, invisible_eles);
 
     visible_eles.style('display','element');
     invisible_eles.style('display','none');
-    // this.cy.fit( this.cy.elements().filter(e=>e.visible()), 50);
-  }
-
-  private testRandomDate(cy:any){
-    let dayCount = DATE_UTILS.diffDays(this.start_dt, this.end_dt);
-    cy.elements().filter(e=>e.scratch('_atype')=='target').forEach(e=>{
-      let randomDay = Math.floor(Math.random() * (dayCount - 1)) + 1;
-      let base_dt = new Date(this.start_dt);
-      base_dt.setDate(base_dt.getDate()+randomDay);
-      e.scratch('_adate',base_dt);
-      console.log('random:', e.id(), DATE_UTILS.toYYYYMMDD(base_dt));
-    });
+    this.cy.fit( this.cy.elements().filter(e=>e.visible()), 50);
   }
 
   initGraph(g:IGraph){
@@ -404,8 +434,6 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
         cy.scratch('_datasource', g.datasource);
         cy.nodes().forEach(e => this.setStyleNode(e));
         cy.edges().forEach(e => this.setStyleEdge(e));
-        // for TEST
-        this.testRandomDate(cy);
       }
     });
 
@@ -414,13 +442,6 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
   cyInit(config:any){
     cytoscape.warnings(false);                 // ** for PRODUCT : custom wheel sensitive
-
-    if( localStorage.getItem('init-mode')=='canvas' ){
-      config.layout = { name: "random"
-        , fit: true, padding: 100, randomize: false, animate: false, positions: undefined
-        , zoom: undefined, pan: undefined, ready: undefined, stop: undefined
-      };
-    }
     this.cy = window['cy'] = cytoscape(config);
 
     // make linking el-events to inner
@@ -473,7 +494,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     }), 500);
 
     cy.on('boxselect', _.debounce( (e)=>{
-      cy.$(':selected').nodes().grabify();
+      // cy.$(':selected').nodes().grabify();
     }), 500);
 
     cy.on('dragfree','node', (e)=>{
@@ -490,7 +511,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     });
 
     cy.on('unselect','node', (e)=>{
-      e.target.ungrabify();
+      // e.target.ungrabify();
       e.target.style('background-color', e.target.scratch('_color'));
       if( !e.target.hasClass('seed')) e.target.style('border-color', '#fff');
       if( e.target.hasClass('icon')) e.target.style('border-opacity', 0);
@@ -569,7 +590,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
       eles = eles.union( eles.neighborhood() );
     }
 
-    eles.grabify();
+    // eles.grabify();
     eles.select();
   }
 
@@ -592,7 +613,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     // when label selection, the others set faded
     // ==> release faded style
     this.cy.batch(()=>{   // ==> without triggering redraws
-      this.cy.$('node:selected').ungrabify();
+      // this.cy.$('node:selected').ungrabify();
       this.cy.nodes().forEach(e=>{ if(e.scratch('_tippy')) e.scratch('_tippy').hide(); });
     });
     this.cy.$(':selected').unselect();

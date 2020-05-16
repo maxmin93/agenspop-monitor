@@ -1,18 +1,26 @@
 package net.bitnine.ag3.agensalert.event
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import net.bitnine.ag3.agensalert.gremlin.AgenspopClient
+import net.bitnine.ag3.agensalert.gremlin.AgenspopUtil
 
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.awaitFirstOrNull
 import org.springframework.stereotype.Service
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 
 @Service
-class EventQryService(private val repo: EventQryRepository) {
-
+class EventQryService(
+        private val repo: EventQryRepository,
+        private val db: DatabaseClient
+) {
     suspend fun findAll() = repo.findAll().asFlow()
     suspend fun findAllNotDeleted() = repo.findAllNotDeleted().asFlow()
 
@@ -35,6 +43,23 @@ class EventQryService(private val repo: EventQryRepository) {
             true
         } else false
     }
+
+    // suspend fun findDateRangeByQid(qid: Long) = repo.findDataRangeByQid(qid).awaitFirstOrNull()
+    suspend fun findDateRangeByQid(qid: Long): EventQryDateRange? {
+        val dateRange = db.execute("SELECT q.id, q.name, q.datasource, q.script, a.from_date, a.to_date, a.cnt FROM EVENT_QRY q LEFT OUTER JOIN (SELECT qid, min(edate) as from_date, max(edate) as to_date, count(edate) as cnt FROM EVENT_AGG GROUP BY qid) a ON q.id = a.qid WHERE q.id = :qid")
+                .bind("qid",qid)
+                .fetch().awaitFirstOrNull()
+        if( dateRange.isNullOrEmpty() ) return null
+        else return EventQryDateRange(
+                id = dateRange.get("ID") as Int,
+                name = dateRange.get("NAME") as String,
+                datasource = dateRange.get("DATASOURCE") as String,
+                script = dateRange.get("SCRIPT") as String,
+                from_date = dateRange.get("FROM_DATE") as LocalDate?,
+                to_date = dateRange.get("TO_DATE") as LocalDate?,
+                cnt = dateRange.get("CNT") as Long
+        )
+    }
 }
 
 // **NOTE :
@@ -45,7 +70,8 @@ class EventQryService(private val repo: EventQryRepository) {
 @Service
 class EventRowService(
         private val repo: EventRowRepository,
-        private val db: DatabaseClient
+        private val db: DatabaseClient,
+        private val client: AgenspopClient
 ) {
 
     suspend fun findAll(): Flow<EventRow> {
@@ -53,10 +79,9 @@ class EventRowService(
         return stream.asFlow()
     }
     suspend fun findById(id: Long) = repo.findById(id).awaitFirstOrNull()
-
     suspend fun findByQid(qid: Long) = repo.findByQid(qid).awaitFirstOrNull()
-    suspend fun findByDateTerms(from: LocalDate, to: LocalDate?): Flow<EventRow> {
-        return repo.findAllByDateTerms(from, to).asFlow()
+    suspend fun findByQidAndDateRange(qid: Long, fromDate: LocalDate, toDate: LocalDate?): Flow<EventRow> {
+        return repo.findAllByQidAndDateRange(qid, fromDate, if(toDate==null) LocalDate.now() else toDate).asFlow()
     }
 
     suspend fun addOne(row: EventRow) = repo.save(row).awaitFirstOrNull()
@@ -71,6 +96,25 @@ class EventRowService(
             true
         } else false
     }
+
+    suspend fun findEventsWithDateRange(qid: Long, fromDate: String, toDate: String?): Flow<Map<*, *>> {
+        var from:LocalDate? = null
+        var to:LocalDate? = null
+        try {
+            from = LocalDate.parse(fromDate, DateTimeFormatter.ISO_DATE);
+            to = LocalDate.parse(toDate, DateTimeFormatter.ISO_DATE);
+        }
+        catch (e: DateTimeParseException){ }
+        if( from == null ) return emptyFlow()
+
+        val rows = repo.findAllByQidAndDateRange(qid, from!!, to)
+                .collectList().awaitFirstOrNull()
+        if( rows.isNullOrEmpty() ) return emptyFlow()
+
+        val idsSet = rows.flatMap{ it.ids!!.split(",") }.toSet()
+        return client.findElementsWithDateRange(idsSet.toList(), fromDate, toDate).asFlow()
+    }
+
 }
 
 

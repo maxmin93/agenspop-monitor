@@ -2,7 +2,9 @@ package net.bitnine.ag3.agensalert.gremlin
 
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.time.LocalDate
 
 @Component
 class AgenspopClient(private val webClient: WebClient){
@@ -71,4 +73,23 @@ class AgenspopClient(private val webClient: WebClient){
                     .retrieve()
                     .bodyToFlux(Map::class.java)
 
+    fun findVerticesWithDateRange(ids:List<String>, fromDate: String, toDate: String?) =
+            webClient.post()
+                    .uri("/search/v/ids/date")
+                    .body(Mono.just(mapOf("q" to ids, "from" to fromDate, "to" to toDate)), Map::class.java)
+                    .retrieve()
+                    .bodyToFlux(Map::class.java)
+
+    fun findEdgesWithDateRange(ids:List<String>, fromDate: String, toDate: String?) =
+            webClient.post()
+                    .uri("/search/e/ids/date")
+                    .body(Mono.just(mapOf("q" to ids, "from" to fromDate, "to" to toDate)), Map::class.java)
+                    .retrieve()
+                    .bodyToFlux(Map::class.java)
+
+    fun findElementsWithDateRange(ids:List<String>, fromDate: String, toDate: String?) =
+            Flux.concat(
+                    findVerticesWithDateRange(ids, fromDate, toDate),
+                    findEdgesWithDateRange(ids, fromDate, toDate)
+            )
 }

@@ -39,9 +39,9 @@ object AgenspopUtil {
                 .distinct()
 
         val minDate = results
-                .minBy { it.get("created").toString() }!!.get("created").toString()
+                .minBy { it.get("timestamp").toString() }!!.get("timestamp").toString()
         val maxDate = results!!
-                .maxBy { it.get("created").toString() }!!.get("created").toString()
+                .maxBy { it.get("timestamp").toString() }!!.get("timestamp").toString()
 
 //        println("    --> groups = ${groups}")
 //        println("    --> labels = ${labels}")
@@ -73,7 +73,7 @@ object AgenspopUtil {
                             "group" to e.get("group").toString(),
                             "id" to (e.get("data") as Map<String,Any>).get("id").toString(),
                             "label" to (e.get("data") as Map<String,Any>).get("label").toString(),
-                            "created" to (e.get("scratch") as Map<String,Any>).get("_\$\$created").toString()
+                            "timestamp" to (e.get("scratch") as Map<String,Any>).get("_\$\$timestamp").toString()
                     )
                     }
                     .filter{ e-> !e.isEmpty() }

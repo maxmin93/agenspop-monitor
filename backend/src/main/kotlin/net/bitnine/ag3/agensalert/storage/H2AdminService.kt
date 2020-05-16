@@ -62,7 +62,7 @@ class H2AdminService(
                                 "group" to e.get("group").toString(),
                                 "id" to (e.get("data") as Map<String,Any>).get("id").toString(),
                                 "label" to (e.get("data") as Map<String,Any>).get("label").toString(),
-                                "created" to (e.get("scratch") as Map<String,Any>).get("_\$\$created").toString()
+                                "timestamp" to (e.get("scratch") as Map<String,Any>).get("_\$\$timestamp").toString()
                         )
                         }
                         .filter{ e-> !e.isEmpty() }

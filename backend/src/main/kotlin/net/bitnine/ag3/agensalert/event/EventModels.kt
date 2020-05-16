@@ -78,10 +78,16 @@ data class EventAgg(
 )
 
 
-class EventDateRange(
-        val from_date: LocalDate,
-        val to_date: LocalDate,
-        val cnt: Long
+class EventQryDateRange(
+        val id: Int,
+        val datasource: String,
+        val name: String,
+        val script: String,                 // cannot be modified, only insert
+        @JsonFormat(pattern="yyyy-MM-dd")
+        val from_date: LocalDate? = null,
+        @JsonFormat(pattern="yyyy-MM-dd")
+        val to_date: LocalDate? = null,
+        val cnt: Long = 0L
 )
 
 data class EventDTO(

@@ -53,14 +53,15 @@ class WebApiConfiguration(private val properties: MonitorProperties) {
 
     @Bean
     fun eventQryRoute(qryHandler: EventQryHandler) = coRouter {
-        GET("/queries/hello", qryHandler::hello)
-        GET("/queries/all", qryHandler::findAllWithDeleted)
-        GET("/queries", qryHandler::findAll)
-        GET("/queries/{id}/changeState", qryHandler::changeStateOne)
-        GET("/queries/search", qryHandler::search)
-        GET("/queries/{id}", qryHandler::findOne)
-        POST("/queries", qryHandler::addOne)
-        PUT("/queries/{id}", qryHandler::updateOne)
+        GET("/query/hello", qryHandler::hello)
+        GET("/query/all", qryHandler::findAllWithDeleted)
+        GET("/query", qryHandler::findAll)
+        GET("/query/{id}/change-state", qryHandler::changeStateOne)
+        GET("/query/search", qryHandler::search)
+        GET("/query/{id}/date-range", qryHandler::findDateRange)
+        GET("/query/{id}", qryHandler::findOne)
+        POST("/query", qryHandler::addOne)
+        PUT("/query/{id}", qryHandler::updateOne)
 //        DELETE("/queries/{id}", qryHandler::removeOne)
     }
 
@@ -68,7 +69,7 @@ class WebApiConfiguration(private val properties: MonitorProperties) {
     fun eventRowRoute(rowHandler: EventRowHandler) = coRouter {
         GET("/rows/hello", rowHandler::hello)
         GET("/rows", rowHandler::findAll)
-        GET("/rows/search", rowHandler::search)
+        GET("/rows/search", rowHandler::search)     // qid, from, to
         GET("/rows/{id}", rowHandler::findOne)
         POST("/rows", rowHandler::addOne)
         PUT("/rows/{id}", rowHandler::updateOne)

@@ -70,6 +70,19 @@ class EventQryHandler(@Autowired val service: EventQryService) {
         }
     }
 
+    suspend fun findDateRange(request: ServerRequest): ServerResponse {
+        val id = request.pathVariable("id").toLongOrNull()
+        return if (id == null) {
+            ServerResponse.badRequest().json().bodyValueAndAwait(ErrorMessage("`id` must be numeric"))
+        } else {
+            val row = service.findDateRangeByQid(id)
+            if (row == null) ServerResponse.notFound().buildAndAwait()
+            else ServerResponse.ok()
+                    .header("Set-Cookie","HttpOnly;Secure;SameSite=Strict")
+                    .json().bodyValueAndAwait(row)
+        }
+    }
+
     suspend fun removeOne(request: ServerRequest): ServerResponse {
         val id = request.pathVariable("id").toLongOrNull()
         return if (id == null) {
