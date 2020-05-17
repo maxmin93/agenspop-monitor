@@ -5,6 +5,7 @@ import { map, share, tap, catchError, retry, concatAll, timeout } from 'rxjs/ope
 import * as _ from 'lodash';
 import { IQuery } from './agens-event-types';
 import { IElement } from './agens-graph-types';
+import { array } from '@amcharts/amcharts4/core';
 
 const TIMEOUT_LIMIT:number = 9999;
 
@@ -82,6 +83,16 @@ export class AmApiService {
       );
   }
 
+  public findQueryWithTimeRange(qid:number) {
+    let uri = this.apiUrl+'/query/'+qid+'/time-range';
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    return this._http.get<any>( uri, { headers : headers })
+      .pipe(
+        retry(3), // retry a failed request up to 3 times
+        catchError(this.handleError) // then handle the error
+      );
+  }
+
   public addQuery(query:IQuery) {
     let uri = this.apiUrl+'/query';
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
@@ -128,6 +139,18 @@ export class AmApiService {
         retry(3), // retry a failed request up to 3 times
         catchError(this.handleError) // then handle the error
       );
+  }
+
+  // rows
+  // http://localhost:8080/rows
+  public findRowsByQid(qid:number, fromDate:string, fromTime:string) {
+    let uri = this.apiUrl+'/rows/qid/'+qid+'?date='+fromDate+'&time='+fromTime;
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    return this._http.get<any>( uri, { headers : headers })
+    .pipe(
+      retry(3), // retry a failed request up to 3 times
+      catchError(this.handleError) // then handle the error
+    );
   }
 
   // aggregations
@@ -193,12 +216,32 @@ export class AmApiService {
   }
 
   public findEventsWithDateRange(qid:number, from_date:string, to_date:string){
-    let uri = this.apiUrl+'/rows/search?qid='+qid+'&from='+from_date+'&to='+to_date;
+    let uri = this.apiUrl+'/rows/search/date?qid='+qid+'&from='+from_date+'&to='+to_date;
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
     .pipe(
       retry(3), // retry a failed request up to 3 times
       catchError(this.handleError) // then handle the error
     );
+  }
+
+  public findEventsWithTimeRange(qid:number, from_date:string, from_time:string){
+    let uri = this.apiUrl+'/rows/search/time?qid='+qid+'&date='+from_date+'&time='+from_time;
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    return this._http.get<any>( uri, { headers : headers })
+    .pipe(
+      retry(3), // retry a failed request up to 3 times
+      catchError(this.handleError) // then handle the error
+    );
+  }
+
+  public findIdsByTimeRange(ids:string[], fromDate:string, fromTime:string){
+    let uri = this.apiUrl+'/agens/ids/range';
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    let params = { q: ids, date: fromDate, time: fromTime };
+    return this._http.post<IElement[]>( uri, params, { headers : headers })
+      .pipe(
+        catchError(this.handleError)
+      );
   }
 }

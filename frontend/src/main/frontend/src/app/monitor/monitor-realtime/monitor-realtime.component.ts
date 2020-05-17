@@ -1,10 +1,10 @@
 import { Component, ViewChild, ElementRef, NgZone, OnInit, AfterViewInit, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, fromEvent } from 'rxjs';
-import { map, filter, debounceTime } from 'rxjs/operators';
+import { Observable, fromEvent, interval } from 'rxjs';
+import { map, filter, debounceTime, timeInterval } from 'rxjs/operators';
 
 import { AmApiService } from '../../services/am-api.service';
-import { IAggregation, IQuery } from '../../services/agens-event-types';
+import { IRow } from '../../services/agens-event-types';
 import { DATE_UTILS } from '../../services/agens-util-funcs';
 import { PALETTE_DARK, PALETTE_BRIGHT } from '../../utils/palette-colors';
 
@@ -39,6 +39,8 @@ const CY_CONFIG:any ={
   // autoungrabify: true        // cannot move node by user control
 };
 
+const INTERVAL_SECONDS:number = 30;   // 30 sec
+
 @Component({
   selector: 'app-monitor-realtime',
   templateUrl: './monitor-realtime.component.html',
@@ -47,7 +49,7 @@ const CY_CONFIG:any ={
 export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
   qid:number;
-  aggregations:IAggregation[] = [];
+  rows:IRow[] = [];
   query:any = {   // IQueryWithDateRange
     id: null, name: 'unknown',
     datasource: 'unknown', query: null, slicedQry: null,
@@ -108,9 +110,13 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
           this.query = r;
           if( this.query.script ){
             this.query['slicedQry'] = this.query.script.substr(0,100);
-            // load graph-data
-            if( this.query.cnt != null && this.query.cnt > 0 )
-            this.loadEventsWithDateRange(this.query.datasource, this.query.id, this.query.from_date, this.query.to_date);
+
+            let ago10min:Date = new Date(Date.now() - (10 * 60 * 1000));    // 10 min ago
+            let fromDate:string = DATE_UTILS.toYYYYMMDD(ago10min);
+            let fromTime:string = DATE_UTILS.toHHMMDD(ago10min);
+        
+            this.loadEventsWithTimeRange(this.query.datasource, this.query.id, fromDate, fromTime);
+            this.doInitChart(this.query.id, fromDate, fromTime);
           }
         }
       });
@@ -118,7 +124,6 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.doInitChart();
     // graph data ready
     this.readyEmitter.subscribe(r=>{
       if( r ){
@@ -138,17 +143,22 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     this.doDestoryChart();
   }
 
-  doInitChart(){
-    let aggregations$ = this.amApiService.findAggregationsByQid(this.qid);
-    aggregations$.pipe(map(q=><IAggregation[]>q)).subscribe(rows => {
-      this.aggregations = _.sortBy(rows, ['edate']);
-      // console.log('aggregations =>', this.aggregations);
-      this.chartData = this.makeChartData(this.aggregations);
-      this.start_dt = new Date(this.chartData.from);
-      this.end_dt = new Date(this.chartData.to);
+  doInitChart(qid: number, fromDate:string, fromTime:string){
+    let rows$ = this.amApiService.findRowsByQid(qid, fromDate, fromTime);
+    rows$.pipe(map(q=><IRow[]>q)).subscribe(rows => {
+      this.rows = _.sortBy(rows, ['edate','etime']);
+      // console.log('rows =>', this.rows);
+      this.chartData = this.makeChartData(this.rows);
+      this.start_dt = this.chartData['startDate'];
+      this.end_dt = this.chartData['endDate'];
 
       this.zone.runOutsideAngular(() =>{
+        // create chart
         this.chart = this.initChart(this.chartData);
+        console.log(`timer(${0} x ${INTERVAL_SECONDS}s) => ${DATE_UTILS.toHHMMDD(this.end_dt)}, start..`);
+
+        // interval start
+        this.timerFetchNewData();
       });
     });
   }
@@ -162,7 +172,13 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   doRefresh($event){
     if( $event ){
       this.doDestoryChart();
-      this.doInitChart();
+
+      let ago10min:Date = new Date(Date.now() - (10 * 60 * 1000));    // 10 min ago
+      let fromDate:string = DATE_UTILS.toYYYYMMDD(ago10min);
+      let fromTime:string = DATE_UTILS.toHHMMDD(ago10min);
+
+      this.loadEventsWithTimeRange(this.query.datasource, this.query.id, fromDate, fromTime);
+      this.doInitChart(this.query.id, fromDate, fromTime);
     }
   }
 
@@ -172,32 +188,91 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
   /////////////////////////////////////////////////////////////////////////
 
-  makeChartData(sorted: IAggregation[]): any {
-    let chartData : any = {};
-    if( _.isNull(sorted) || sorted.length == 0 ) return chartData;
+  timerFetchNewData(){
+    // interval start
+    interval(INTERVAL_SECONDS * 1000).pipe(timeInterval()).subscribe(r=>{
+      this.end_dt = DATE_UTILS.afterSeconds(this.end_dt, INTERVAL_SECONDS);
+      this.appendChartData(r.value+1, this.end_dt);
+    });
+  }
 
-    // get min and max date
-    //  - order by edate, qid
-    chartData['from'] = sorted[0].edate;
-    chartData['to'] = sorted[sorted.length-1].edate;
-    chartData['data'] = [];
+  appendChartData(idx:number, end_dt:Date){
+    let from_dt:Date = new Date( end_dt.getTime() - (10*1000) );  // end_dt - 10s
+    let fromDate = DATE_UTILS.toYYYYMMDD(from_dt);
+    let fromTime = DATE_UTILS.toHHMMDD(from_dt);
+
+    let rows$ = this.amApiService.findRowsByQid(this.qid, fromDate, fromTime);
+    rows$.pipe(map(q=><IRow[]>q)).subscribe(rows => {
+      let sorted:IRow[] = _.sortBy(rows, ['edate','etime']);
+      let filtered = sorted.filter(t=>{
+        let evtTimestamp = new Date(t.edate+'T'+t.etime).getTime();
+        return evtTimestamp > from_dt.getTime();
+      });
+
+      // if result is empty, break out
+      if( filtered.length == 0 ){
+        let emptyRow = { date: this.end_dt, value: 0 };
+        console.log(`timer(${idx} x ${INTERVAL_SECONDS}s) => ${ DATE_UTILS.toHHMMDD(this.end_dt)}, ${emptyRow.value}`);
+        // append new data to chartData ==> auto-refresh chart
+        this.chartData.data.push(emptyRow);
+        this.chart.data = [...this.chartData.data];
+        return;
+      }
+
+      filtered.forEach(t=>{
+        let newRow = { date: new Date(t.edate+'T'+t.etime), value: t.ids_cnt };
+        console.log(`timer(${idx} x ${INTERVAL_SECONDS}s) => ${ DATE_UTILS.toHHMMDD(newRow.date)}, ${newRow.value}`);
+        // append new data to chartData ==> auto-refresh chart
+        this.chartData.data.push(newRow);
+        this.chart.data = [...this.chartData.data];
+      });
+
+      let ids = filtered.map(e=>e.ids).join(',').split(',');
+      let targets$ = this.amApiService.findIdsByTimeRange(ids, fromDate, fromTime);
+      targets$.subscribe(r=>{
+        let newEles = r.filter(x=>!this.cy.getElementById(x.data.id));
+        newEles.forEach(e=>{ e.scratch['_etype']='target'; });
+        this.g.nodes = this.g.nodes.concat( newEles.filter(x=>x.group == 'nodes') );
+        this.g.edges = this.g.edges.concat( newEles.filter(x=>x.group == 'edges') );
+        let elements = this.cy.add( newEles );
+        elements.filter(e=>e.isNode()).forEach(e=>this.setStyleNode(e));
+        elements.filter(e=>e.isNode()).forEach(e=>this.setStyleEdge(e));
+      });
+    });
+  }
+
+  /////////////////////////////////////////////////////////////////////////
+
+  makeChartData(sorted: IRow[]): any {
+    let fromTimestamp = Date.now();
+    let chartData : any = {
+      data: [],
+      startDate: DATE_UTILS.calcNextCycle( fromTimestamp-(10*60*1000), INTERVAL_SECONDS*1000),
+      endDate: DATE_UTILS.calcNextCycle( fromTimestamp, INTERVAL_SECONDS*1000)
+    };
+    if( !_.isNull(sorted) && sorted.length > 0 ){
+      let fromDate = new Date(sorted[0].edate + 'T' + sorted[0].etime);     // make ISO format
+      chartData['startDate'] = DATE_UTILS.calcNextCycle( fromDate.getTime(), INTERVAL_SECONDS*1000);
+    }
 
     // make any array
-    //  - loop : min date ~ max date
-    let fromDate = new Date(chartData['from'])
-    fromDate.setDate( fromDate.getDate() - 1 )        // before one more day
-    let dayCount = DATE_UTILS.diffDays(fromDate, new Date(chartData['to']))+1;
-    for( let idx=0; idx <= dayCount; idx+=1 ){        // until one more day
-      let curr = DATE_UTILS.afterDays(fromDate, idx);
-      let currString = DATE_UTILS.toYYYYMMDD(curr);
-      let row:any = { date: curr, value: 0 };
+    //  - loop : start date ~ end date
 
-      let matched = _.find(sorted, r=>r.edate == currString );
+    let secCount = DATE_UTILS.diffSeconds(chartData.startDate, chartData.endDate);
+    let currTime:Date;
+    for( let idx=0; idx <= secCount; idx+=INTERVAL_SECONDS ){                             // until one more day
+      currTime = DATE_UTILS.afterSeconds(chartData.startDate, idx);
+      let row:any = { date: currTime, value: 0 };    // value: Math.round(Math.random()*1000) };
+
+      // return the first element (not array)
+      let matched = _.find(sorted, r=> DATE_UTILS.diffSeconds(new Date(r.edate+'T'+r.etime), currTime ) < 4);
       if( matched != undefined ){
         row['value'] = matched.ids_cnt;
       }
       chartData['data'].push(row);
     }
+    chartData['endDate'] = currTime;                      // save last day
+
     console.log('chartData:', chartData);
     return chartData;
   }
@@ -209,7 +284,16 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
     let dateAxis = chart.xAxes.push(new am4charts.DateAxis());
     dateAxis.renderer.grid.template.location = 0;
-    dateAxis.dateFormats.setKey("day", "yyyy-MM-dd");
+    // https://www.amcharts.com/docs/v4/concepts/axes/date-axis/#Setting_date_formats
+    dateAxis.dateFormats.setKey("second", "HH:mm:ss");
+    dateAxis.periodChangeDateFormats.setKey("second", "HH:mm:ss");
+    // not works
+    dateAxis.dateFormatter = new am4core.DateFormatter();
+    dateAxis.dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss";
+
+    // https://www.amcharts.com/docs/v4/concepts/axes/date-axis/#Controlling_automatic_granularity_of_axis_grid
+    dateAxis.baseInterval = { timeUnit: "second", count: 30 };
+
     // Handling axis zoom events via API
     // https://www.amcharts.com/docs/v4/tutorials/handling-axis-zoom-events-via-api/
     fromEvent(dateAxis.events, "startchanged").pipe(
@@ -239,6 +323,13 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     let scrollbarX = new am4charts.XYChartScrollbar();
     scrollbarX.series.push(series);
     chart.scrollbarX = scrollbarX;
+
+    // https://www.amcharts.com/docs/v4/concepts/data/#Date_based_data
+    chart.events.on("beforedatavalidated", function(ev) {
+      chart.data.sort((a:any, b:any)=>{
+        return (<Date>a.date).getTime() - (<Date>b.date).getTime();
+      });
+    });
 
     return chart;
   }
@@ -275,8 +366,8 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     return labels;
   }
 
-  loadEventsWithDateRange( datasource:string, qid:number, from_date: string, to_date: string ){
-    let eles$:Observable<IElement[]> = this.amApiService.findEventsWithDateRange(qid, from_date, to_date);
+  loadEventsWithTimeRange( datasource:string, qid:number, from_date: string, from_time: string ){
+    let eles$:Observable<IElement[]> = this.amApiService.findEventsWithTimeRange(qid, from_date, from_time);
     eles$.subscribe(r=>{
         this.g.datasource = datasource;
 
@@ -387,8 +478,8 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   }
 
   private showGraphByDateTerms(cy:any, start_dt:Date, end_dt:Date){
-    let startDate = DATE_UTILS.toYYYYMMDD(start_dt)+' 00:00:00';
-    let endDate = DATE_UTILS.toYYYYMMDD(end_dt)+' 00:00:00';
+    let startDate = DATE_UTILS.toYYYYMMDD(start_dt)+' '+DATE_UTILS.toHHMMDD(start_dt);
+    let endDate = DATE_UTILS.toYYYYMMDD(end_dt)+' '+DATE_UTILS.toHHMMDD(end_dt);
     let targets = cy.elements()
                     .filter(e=>e.scratch('_etype')=='target' && !!e.scratch(CREATED_TAG))
                     .filter(e=>e.scratch(CREATED_TAG) >= startDate && e.scratch(CREATED_TAG) <= endDate);

@@ -1,10 +1,16 @@
 package net.bitnine.ag3.agensalert.gremlin
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 
 @Service
@@ -39,5 +45,23 @@ class AgenspopService(private val client: AgenspopClient){
 
     suspend fun execGremlin(datasource:String, script: String, fromDate:String, toDate:String?=null) =
             client.execGremlin(datasource, script, fromDate, toDate).asFlow()
+
+    suspend fun findIdsWithTimeRange(ids: List<String>, fromDate: String, fromTime: String?): Flow<Map<*, *>> {
+
+//        var dateValue: LocalDate? = null
+//        var timeValue: LocalTime? = null
+//        try {
+//            dateValue = LocalDate.parse(fromDate, DateTimeFormatter.ISO_LOCAL_DATE);
+//            timeValue = LocalTime.parse( if(fromTime.isNullOrBlank()) "00:00:00" else fromTime,
+//                    DateTimeFormatter.ISO_LOCAL_TIME);
+//        }
+//        catch (e: DateTimeParseException){ }
+//        if( dateValue == null || timeValue == null ) return emptyFlow()
+
+        val fromDateTime = "${fromDate} ${if(fromTime.isNullOrBlank()) "00:00:00" else fromTime}"
+        println("findIdsWithTimeRange(${fromDateTime}~): ${ids}")
+        return client.findElementsWithDateRange(ids, fromDateTime, null).asFlow()
+    }
+
 
 }

@@ -26,23 +26,75 @@ class EventRowHandler(@Autowired val service: EventRowService) {
     }
 
     // by datasource
-    suspend fun search(request: ServerRequest): ServerResponse {
+    suspend fun searchDate(request: ServerRequest): ServerResponse {
         val criterias = request.queryParams()
         return when {
             criterias.isEmpty() -> ServerResponse.badRequest().json().bodyValueAndAwait(
                     ErrorMessage("Search must have query params"))
-            criterias.contains("from") -> {
+            criterias.contains("qid") -> {
                 val qid = criterias.getFirst("qid")
                 val fromValue = criterias.getFirst("from")?.toString()
                 val toValue = criterias.getFirst("to")?.toString()
 
-                if (qid.isNullOrBlank() || qid.toLongOrNull() == null || fromValue.isNullOrBlank()) {
+                if (qid!!.toLongOrNull() == null || fromValue.isNullOrBlank()) {
                     ServerResponse.badRequest().json().bodyValueAndAwait(
                             ErrorMessage("Incorrect search criteria value: qid, from"))
                 }
                 else {
                     ServerResponse.ok().json().bodyAndAwait(
                             service.findEventsWithDateRange( qid.toLong(), fromValue, toValue)
+                    )
+                }
+            }
+            else -> ServerResponse.badRequest().json().bodyValueAndAwait(
+                    ErrorMessage("Incorrect search criteria"))
+        }
+    }
+
+    // by datasource
+    suspend fun searchTime(request: ServerRequest): ServerResponse {
+        val criterias = request.queryParams()
+        return when {
+            criterias.isEmpty() -> ServerResponse.badRequest().json().bodyValueAndAwait(
+                    ErrorMessage("Search must have query params"))
+            criterias.contains("qid") -> {
+                val qid = criterias.getFirst("qid")
+                val dateValue = criterias.getFirst("date")?.toString()
+                val timeValue = criterias.getFirst("time")?.toString()
+
+                if (qid!!.toLongOrNull() == null || dateValue.isNullOrBlank()) {
+                    ServerResponse.badRequest().json().bodyValueAndAwait(
+                            ErrorMessage("Incorrect search criteria value: qid, from"))
+                }
+                else {
+                    ServerResponse.ok().json().bodyAndAwait(
+                            service.findEventsWithTimeRange( qid.toLong(), dateValue, timeValue)
+                    )
+                }
+            }
+            else -> ServerResponse.badRequest().json().bodyValueAndAwait(
+                    ErrorMessage("Incorrect search criteria"))
+        }
+    }
+
+    // by datasource
+    suspend fun findByQid(request: ServerRequest): ServerResponse {
+        val qid = request.pathVariable("qid").toLongOrNull()
+        val criterias = request.queryParams()
+        return when {
+            criterias.isEmpty() -> ServerResponse.badRequest().json().bodyValueAndAwait(
+                    ErrorMessage("Search must have query params"))
+            criterias.contains("date") -> {
+                val dateValue = criterias.getFirst("date")?.toString()
+                val timeValue = criterias.getFirst("time")?.toString()
+
+                if (qid == null || dateValue.isNullOrBlank()) {
+                    ServerResponse.badRequest().json().bodyValueAndAwait(
+                            ErrorMessage("Incorrect search criteria value: qid, fromDate"))
+                }
+                else {
+                    ServerResponse.ok().json().bodyAndAwait(
+                            service.findByQidWithTimeRange( qid, dateValue, timeValue)
                     )
                 }
             }

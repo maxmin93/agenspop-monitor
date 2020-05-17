@@ -6,6 +6,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.time.LocalDate
+import java.time.LocalTime
 
 
 interface EventQryRepository : ReactiveCrudRepository<EventQry, Long> {
@@ -43,6 +44,9 @@ interface EventRowRepository : ReactiveCrudRepository<EventRow, Long> {
 
     @Query("SELECT r.* FROM event_row r WHERE r.qid = :qid and r.edate between :from and :to order by id")
     fun findAllByQidAndDateRange(qid: Long, from: LocalDate, to: LocalDate? = LocalDate.now()): Flux<EventRow>
+
+    @Query("SELECT r.* FROM event_row r WHERE r.qid = :qid and (r.edate+r.etime) >= PARSEDATETIME(:fromDateTime,'yyyy-MM-dd HH:mm:ss') order by id")
+    fun findAllByQidAndTimeRange(qid: Long, fromDateTime: String): Flux<EventRow>
 
     @Query("SELECT r.* FROM event_row r, event_qry q WHERE q.datasource = :datasource and q.id = r.qid order by r.edate, r.id")
     fun findAllByDatasource(datasource: String): Flux<EventRow>

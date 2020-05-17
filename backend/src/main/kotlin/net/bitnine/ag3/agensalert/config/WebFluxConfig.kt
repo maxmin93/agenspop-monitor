@@ -49,6 +49,7 @@ class WebApiConfiguration(private val properties: MonitorProperties) {
         POST("/agens/elements", agenspopHandler::findElements)
         POST("/agens/gremlin", agenspopHandler::execGremlin)
         POST("/agens/gremlin/range", agenspopHandler::execGremlinWithRange)
+        POST("/agens/ids/range", agenspopHandler::findIdsWithTimeRange)
     }
 
     @Bean
@@ -69,7 +70,9 @@ class WebApiConfiguration(private val properties: MonitorProperties) {
     fun eventRowRoute(rowHandler: EventRowHandler) = coRouter {
         GET("/rows/hello", rowHandler::hello)
         GET("/rows", rowHandler::findAll)
-        GET("/rows/search", rowHandler::search)     // qid, from, to
+        GET("/rows/qid/{qid}", rowHandler::findByQid)        // date, time
+        GET("/rows/search/date", rowHandler::searchDate)     // qid, from, to
+        GET("/rows/search/time", rowHandler::searchTime)     // qid, from, to
         GET("/rows/{id}", rowHandler::findOne)
         POST("/rows", rowHandler::addOne)
         PUT("/rows/{id}", rowHandler::updateOne)

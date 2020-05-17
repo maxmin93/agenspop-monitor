@@ -73,19 +73,25 @@ class AgenspopClient(private val webClient: WebClient){
                     .retrieve()
                     .bodyToFlux(Map::class.java)
 
-    fun findVerticesWithDateRange(ids:List<String>, fromDate: String, toDate: String?) =
-            webClient.post()
-                    .uri("/search/v/ids/date")
-                    .body(Mono.just(mapOf("q" to ids, "from" to fromDate, "to" to toDate)), Map::class.java)
-                    .retrieve()
-                    .bodyToFlux(Map::class.java)
+    fun findVerticesWithDateRange(ids:List<String>, fromDate: String, toDate: String?): Flux<Map<*, *>> {
+        val params = mutableMapOf<String, Any?>("q" to ids, "from" to fromDate)
+        if( toDate.isNullOrBlank().not() ) params.set("to", toDate)
+        return webClient.post()
+                .uri("/search/v/ids/date")
+                .body(Mono.just(params), Map::class.java)
+                .retrieve()
+                .bodyToFlux(Map::class.java)
+    }
 
-    fun findEdgesWithDateRange(ids:List<String>, fromDate: String, toDate: String?) =
-            webClient.post()
-                    .uri("/search/e/ids/date")
-                    .body(Mono.just(mapOf("q" to ids, "from" to fromDate, "to" to toDate)), Map::class.java)
-                    .retrieve()
-                    .bodyToFlux(Map::class.java)
+    fun findEdgesWithDateRange(ids:List<String>, fromDate: String, toDate: String?): Flux<Map<*, *>> {
+        val params = mutableMapOf<String, Any?>("q" to ids, "from" to fromDate)
+        if (toDate.isNullOrBlank().not()) params.set("to", toDate)
+        return webClient.post()
+                .uri("/search/e/ids/date")
+                .body(Mono.just(params), Map::class.java)
+                .retrieve()
+                .bodyToFlux(Map::class.java)
+    }
 
     fun findElementsWithDateRange(ids:List<String>, fromDate: String, toDate: String?) =
             Flux.concat(

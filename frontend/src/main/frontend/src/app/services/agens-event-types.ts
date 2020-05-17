@@ -17,3 +17,14 @@ export interface IAggregation {
   row_cnt: number;
   ids_cnt: number;
 };
+
+export interface IRow {
+  id: number;
+  qid: number;
+  type: string;
+  labels: string;
+  ids: string
+  ids_cnt: number;
+  edate: string;
+  etime: string;
+};

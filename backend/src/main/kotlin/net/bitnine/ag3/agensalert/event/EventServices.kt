@@ -12,6 +12,7 @@ import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.awaitFirstOrNull
 import org.springframework.stereotype.Service
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
@@ -101,8 +102,8 @@ class EventRowService(
         var from:LocalDate? = null
         var to:LocalDate? = null
         try {
-            from = LocalDate.parse(fromDate, DateTimeFormatter.ISO_DATE);
-            to = LocalDate.parse(toDate, DateTimeFormatter.ISO_DATE);
+            from = LocalDate.parse(fromDate, DateTimeFormatter.ISO_LOCAL_DATE);
+            to = LocalDate.parse(toDate, DateTimeFormatter.ISO_LOCAL_DATE);
         }
         catch (e: DateTimeParseException){ }
         if( from == null ) return emptyFlow()
@@ -114,6 +115,45 @@ class EventRowService(
         val idsSet = rows.flatMap{ it.ids!!.split(",") }.toSet()
         return client.findElementsWithDateRange(idsSet.toList(), fromDate, toDate).asFlow()
     }
+
+    suspend fun findByQidWithTimeRange(qid: Long, fromDate: String, fromTime: String?): Flow<EventRow> {
+        var dateValue: LocalDate? = null
+        var timeValue: LocalTime? = null
+        try {
+            dateValue = LocalDate.parse(fromDate, DateTimeFormatter.ISO_LOCAL_DATE);
+            timeValue = LocalTime.parse(if (fromTime.isNullOrBlank()) "00:00:00" else fromTime,
+                    DateTimeFormatter.ISO_LOCAL_TIME);
+        } catch (e: DateTimeParseException) {
+        }
+        if (dateValue == null || timeValue == null) return emptyFlow()
+
+        val fromDateTime = "${fromDate} ${if (fromTime.isNullOrBlank()) "00:00:00" else fromTime}"
+        return repo.findAllByQidAndTimeRange(qid, fromDateTime).asFlow()
+    }
+
+    suspend fun findEventsWithTimeRange(qid: Long, fromDate: String, fromTime: String?): Flow<Map<*, *>> {
+        var dateValue: LocalDate? = null
+        var timeValue: LocalTime? = null
+        try {
+            dateValue = LocalDate.parse(fromDate, DateTimeFormatter.ISO_LOCAL_DATE);
+            timeValue = LocalTime.parse( if(fromTime.isNullOrBlank()) "00:00:00" else fromTime,
+                    DateTimeFormatter.ISO_LOCAL_TIME);
+        }
+        catch (e: DateTimeParseException){ }
+        if( dateValue == null || timeValue == null ) return emptyFlow()
+
+        val fromDateTime = "${fromDate} ${if(fromTime.isNullOrBlank()) "00:00:00" else fromTime}"
+        val rows = repo.findAllByQidAndTimeRange(qid, fromDateTime)
+                .collectList().awaitFirstOrNull()
+        if( rows.isNullOrEmpty() ) return emptyFlow()
+
+        val idsSet = rows.flatMap{ it.ids!!.split(",") }.toSet()
+        println("${qid} ${fromDateTime} ==> ${idsSet}")
+        return client.findElementsWithDateRange(idsSet.toList(), fromDateTime, null).asFlow()
+    }
+
+    // ** NOTE: modern 데이터와 rows 수집시 기록과 시간적 오차가 있다 ==> 동작은 되는거 확인함
+    // http://localhost:8082/rows/search/time?qid=101&date=2019-03-23&time=02:15:17
 
 }
 

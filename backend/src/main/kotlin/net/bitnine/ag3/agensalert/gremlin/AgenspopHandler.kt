@@ -260,4 +260,31 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
         }
     }
 
+    suspend fun findIdsWithTimeRange(request: ServerRequest): ServerResponse {
+        val params = try {
+            request.bodyToMono<Map<String,Any?>>().awaitFirstOrNull()
+        } catch (e: Exception) {
+            logger.error("Decoding body error", e)
+            null
+        }
+
+        return if (params == null) {
+            ServerResponse.badRequest().json()
+                    .bodyValueAndAwait(ErrorMessage("Search must have query params"))
+        } else {
+            val ids:List<String>? = params.get("q") as List<String>
+            val fromDate:String? = params.get("date") as String
+            val fromTime:String? = params.get("time") as String
+            println("findIdsWithTimeRange(${fromDate}T${fromTime}~): ${ids}")
+
+            if (ids.isNullOrEmpty() || fromDate.isNullOrBlank()) {
+                ServerResponse.badRequest().json()
+                        .bodyValueAndAwait(ErrorMessage("Incorrect search criteria value: "
+                                +"q(=ids), date"))
+            } else {
+                ServerResponse.ok().json()
+                        .bodyAndAwait(service.findIdsWithTimeRange(ids, fromDate, fromTime))
+            }
+        }
+    }
 }

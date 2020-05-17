@@ -144,8 +144,8 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
       this.aggregations = _.sortBy(rows, ['edate']);
       // console.log('aggregations =>', this.aggregations);
       this.chartData = this.makeChartData(this.aggregations);
-      this.start_dt = new Date(this.chartData.from);
-      this.end_dt = new Date(this.chartData.to);
+      this.start_dt = this.chartData['startDate'];
+      this.end_dt = this.chartData['endDate'];
 
       this.zone.runOutsideAngular(() =>{
         this.chart = this.initChart(this.chartData);
@@ -185,10 +185,13 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     // make any array
     //  - loop : min date ~ max date
     let fromDate = new Date(chartData['from'])
-    fromDate.setDate( fromDate.getDate() - 1 )        // before one more day
+    fromDate.setDate( fromDate.getDate() - 1 );         // before one more day
+    chartData['startDate'] = fromDate;                  // save first day
+
     let dayCount = DATE_UTILS.diffDays(fromDate, new Date(chartData['to']))+1;
-    for( let idx=0; idx <= dayCount; idx+=1 ){        // until one more day
-      let curr = DATE_UTILS.afterDays(fromDate, idx);
+    let curr;
+    for( let idx=0; idx <= dayCount; idx+=1 ){          // until one more day
+      curr = DATE_UTILS.afterDays(fromDate, idx);
       let currString = DATE_UTILS.toYYYYMMDD(curr);
       let row:any = { date: curr, value: 0 };
 
@@ -198,6 +201,8 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
       }
       chartData['data'].push(row);
     }
+    chartData['endDate'] = curr;                        // save last day
+
     console.log('chartData:', chartData);
     return chartData;
   }
@@ -210,6 +215,8 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     let dateAxis = chart.xAxes.push(new am4charts.DateAxis());
     dateAxis.renderer.grid.template.location = 0;
     dateAxis.dateFormats.setKey("day", "yyyy-MM-dd");
+    dateAxis.baseInterval = { timeUnit: 'day', count: 1 };    // time unit: second, minute, hour, day, etc.
+                                               // https://www.amcharts.com/docs/v4/concepts/axes/date-axis/
     // Handling axis zoom events via API
     // https://www.amcharts.com/docs/v4/tutorials/handling-axis-zoom-events-via-api/
     fromEvent(dateAxis.events, "startchanged").pipe(
@@ -404,11 +411,22 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
 
     let visible_eles = visible_nodes.union(connected_edges);
     let invisible_eles = cy.elements().difference(visible_eles);    // rest elements
-    // console.log('showGraphByDateTerms:', visible_eles, invisible_eles);
+    console.log(`showGraph[ ${DATE_UTILS.toYYYYMMDD(start_dt)} ~ ${DATE_UTILS.toYYYYMMDD(end_dt)} ]:`, visible_eles.map(e=>e.id()), invisible_eles.map(e=>e.id()));
 
-    visible_eles.style('display','element');
-    invisible_eles.style('display','none');
-    this.cy.fit( this.cy.elements().filter(e=>e.visible()), 50);
+    // **NOTE: hidden 에서 visible 로 잘 바뀌지 않는다. (nodes 가 target인 경우만 그런듯)
+    //         edge 한두개가 보이지 않는데, 클릭해 보면 나온다. 당장은 해결책이 없음 (-_-;)
+    cy.batch(()=>{
+      visible_eles.style('display','element');
+      // visible_eles.style('visibility','visible');
+      // visible_eles.nodes().forEach(e=>this.setStyleNode(e));
+      // visible_eles.edges().forEach(e=>this.setStyleEdge(e));
+      cy.delay(100);
+      invisible_eles.style('display','none');
+      // invisible_eles.style('visibility','hidden');
+      cy.delay(100);
+      cy.fit( this.cy.elements().filter(e=>e.visible()), 50);
+    });
+    // cy.resize();
   }
 
   initGraph(g:IGraph){

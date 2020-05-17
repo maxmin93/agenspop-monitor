@@ -58,3 +58,14 @@ GROUP BY "QID" [42122-200]
 	at org.h2.server.web.WebThread.process(WebThread.java:178)
 	at org.h2.server.web.WebThread.run(WebThread.java:94)
 	at java.lang.Thread.run(Thread.java:748)
+2020-05-17 01:18:16 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "SELECT EDATE, ETIME, EDATE+ETIME AS DT, PARSEDATETIME('2019-05-13 17:23:10','yyyy-MM-dd HH:mm:ss') AS TEST
+, CASE WHEN ( EDATE+ETIME ) > PARSEDATETIME('2019-05-13 17:23:10','yyyy-MM-dd HH:mm:ss') THEN 'Bigger'
+WHEN ( EDATE+ETIME ) <= PARSEDATETIME('2019-05-13 17:23:10','yyyy-MM-dd HH:mm:ss') THEN 'Smaller' END CP,
+DATEADD(EDATE,ETIME)[*] AS SECS
+FROM EVENT_ROW WHERE QID = 101"; expected "(, ., [, ::, AT, FORMAT, *, /, %, +, -, ||, ~, !~, NOT, LIKE, ILIKE, REGEXP, IS, IN, BETWEEN, AND, OR, ,"; SQL statement:
+SELECT edate, etime, edate+etime as dt, PARSEDATETIME('2019-05-13 17:23:10','yyyy-MM-dd HH:mm:ss') as test
+, CASE WHEN ( edate+etime ) > PARSEDATETIME('2019-05-13 17:23:10','yyyy-MM-dd HH:mm:ss') THEN 'Bigger'
+WHEN ( edate+etime ) <= PARSEDATETIME('2019-05-13 17:23:10','yyyy-MM-dd HH:mm:ss') THEN 'Smaller' END cp,
+dateadd(edate,etime) as secs
+FROM EVENT_ROW where qid = 101 [42001-200]
