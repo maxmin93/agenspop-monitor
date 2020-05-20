@@ -190,7 +190,7 @@ class EventAggService(
         // .asType<Map<String,Long>>()      // 안됨!! 생성자 호출함
 
         val dateRange = db.execute("SELECT min(s.edate) as from_date, max(s.edate) as to_date, count(edate) as cnt FROM event_agg s WHERE s.qid = :qid")
-                .bind("qid",101L)
+                .bind("qid", qid)
                 .fetch().awaitFirstOrNull()
 
         // **NOTE: repository를 이용한 자유 쿼리는 안됨!!

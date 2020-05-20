@@ -83,6 +83,11 @@
             <artifactId>reactor-kotlin-extensions</artifactId>
             <version>${reactor-ext.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.projectreactor.addons</groupId>
+            <artifactId>reactor-extra</artifactId>
+            <version>3.3.2.RELEASE</version>
+        </dependency>
 
         <!-- for r2dbc and h2 -->
         <dependency>

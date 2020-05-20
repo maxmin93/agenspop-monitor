@@ -3,36 +3,38 @@ package net.bitnine.ag3.agensalert.gremlin
 // **NOTE : interface 는 생성자를 가질 수 없다
 // interface AgensElement(
 
-abstract class AgensElement(
-        open val id: String,
-        open val datasource: String,
-        open val label: String,
-        open val properties: Map<String,Any> = emptyMap(),
+
+abstract class CyElement(
+        open val group: String,
+        open val data: CyData,
         open val scratch: Map<String,Any> = emptyMap()
 )
 
-data class AgensProperty(
+data class CyData(
+        val id: String,
+        val datasource: String,
+        val label: String,
+        val properties: Map<String,Any> = emptyMap(),
+        val source: String?,
+        val target: String?
+)
+
+data class CyProperty(
         val key: String,
         val type: String,
         val value: String
 )
 
-data class AgensVertex(
-        override val id: String,
-        override val datasource: String,
-        override val label: String,
-        override val properties: Map<String,Any> = emptyMap(),
+data class CyVertex(
+        override val group: String,
+        override val data: CyData,
         override val scratch: Map<String,Any> = emptyMap()
 )
-: AgensElement(id, datasource, label, properties, scratch)
+: CyElement(group, data, scratch)
 
 data class AgensEdge(
-        override val id: String,
-        override val datasource: String,
-        override val label: String,
-        override val properties: Map<String,Any> = emptyMap(),
-        override val scratch: Map<String,Any> = emptyMap(),
-        val src: String,
-        val dst: String
+        override val group: String,
+        override val data: CyData,
+        override val scratch: Map<String,Any> = emptyMap()
 )
-: AgensElement(id, datasource, label, properties, scratch)
+: CyElement(group, data, scratch)

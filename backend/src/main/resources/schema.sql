@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS event_qry(
     cr_date DATE DEFAULT CURRENT_DATE(),            -- create date
     up_date DATE DEFAULT CURRENT_DATE()             -- update date
 );
+CREATE INDEX IF NOT EXISTS idx_qry_deleted ON event_qry(delete_yn);
+CREATE INDEX IF NOT EXISTS idx_qry_datasource ON event_qry(datasource);
 
 -- DROP TABLE IF EXISTS event_row;
 CREATE TABLE IF NOT EXISTS event_row(
@@ -30,6 +32,8 @@ CREATE TABLE IF NOT EXISTS event_row(
     edate DATE DEFAULT CURRENT_DATE(),
     etime TIME DEFAULT CURRENT_TIME()
 );
+CREATE INDEX IF NOT EXISTS idx_row_qid ON event_row(qid);
+CREATE INDEX IF NOT EXISTS idx_row_edate ON event_row(edate);
 
 -- DROP TABLE IF EXISTS event_agg;
 CREATE TABLE IF NOT EXISTS event_agg(
@@ -41,3 +45,5 @@ CREATE TABLE IF NOT EXISTS event_agg(
     row_cnt INT NOT NULL DEFAULT 0,                 -- # of records
     ids_cnt INT NOT NULL DEFAULT 0                  -- sum of count of ids
 );
+CREATE INDEX IF NOT EXISTS idx_agg_qid ON event_agg(qid);
+CREATE INDEX IF NOT EXISTS idx_agg_edate ON event_agg(edate);

@@ -5,6 +5,7 @@ import net.bitnine.ag3.agensalert.event.EventQryRepository
 import net.bitnine.ag3.agensalert.event.EventRow
 
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -26,7 +27,17 @@ object AgenspopUtil {
     }
 
     @JvmStatic
-    fun makeRowFromResults(dt:LocalDate, qry: EventQry, results:List<Map<String,Any>>): EventRow {
+    fun str2datetime(value:String):LocalDateTime?{
+        try {
+            return LocalDateTime.parse(value, dtFormatter);
+        }
+        catch (e: DateTimeParseException){
+            return null;
+        }
+    }
+
+    @JvmStatic
+    fun makeRowFromResults(defaultDatetime:LocalDateTime, qry: EventQry, results:List<Map<String,Any>>): EventRow {
         val groups: Map<String,Int> = results
                 .groupingBy { it.get("group").toString() }.eachCount()
         val groupValue = groups.maxBy { it.value }!!.key
@@ -40,8 +51,10 @@ object AgenspopUtil {
 
         val minDate = results
                 .minBy { it.get("timestamp").toString() }!!.get("timestamp").toString()
-        val maxDate = results!!
-                .maxBy { it.get("timestamp").toString() }!!.get("timestamp").toString()
+        val evtDateTime = str2datetime(minDate)
+
+//        val maxDate = results!!
+//                .maxBy { it.get("timestamp").toString() }!!.get("timestamp").toString()
 
 //        println("    --> groups = ${groups}")
 //        println("    --> labels = ${labels}")
@@ -51,46 +64,9 @@ object AgenspopUtil {
         return EventRow(id = null, qid = qry.id!!, type = groupValue,
                 ids_cnt = ids.size.toLong(), ids = ids.joinToString(separator = ","),
                 labels = labels.keys.joinToString(separator = ","),
-                edate = str2date(minDate), etime = LocalTime.now())
-    }
-
-    @JvmStatic
-    fun getQueries(dt: LocalDate, qryRepository: EventQryRepository, apiClient: AgenspopClient) {
-        // **NOTE: flux to list or map
-        // https://grokonez.com/reactive-programming/reactor/reactor-convert-flux-into-list-map-reactive-programming
-
-        val fromDate = "2018-01-01";
-        val toDate = "2020-05-01";
-
-        val queries = qryRepository.findAllNotDeleted()
-                .collectList().block();
-        for( query in queries!!){
-            print("\n${query.id}: ${query.datasource}_${query.script} ==> ")
-            val results = apiClient.execGremlin(query.datasource, query.script, fromDate, toDate)
-                    .filter{ e-> !e.isNullOrEmpty() && e.containsKey("group") && e.containsKey("data") && e.containsKey("scratch") }
-                    .map{
-                        e-> mapOf<String,String>(
-                            "group" to e.get("group").toString(),
-                            "id" to (e.get("data") as Map<String,Any>).get("id").toString(),
-                            "label" to (e.get("data") as Map<String,Any>).get("label").toString(),
-                            "timestamp" to (e.get("scratch") as Map<String,Any>).get("_\$\$timestamp").toString()
-                    )
-                    }
-                    .filter{ e-> !e.isEmpty() }
-                    .collectList().block()
-
-            print("${results?.size}")
-
-            var row: EventRow
-            if( results.isNullOrEmpty().not() ) {
-                row = AgenspopUtil.makeRowFromResults(dt, query, results!!)
-            }
-            else{
-                row = EventRow(id = null, qid = query.id!!, type = "nodes",
-                        ids_cnt = 0L, ids = "", labels = "",
-                        edate = dt, etime = LocalTime.now())
-            }
-        }
+                edate = evtDateTime?.toLocalDate() ?: defaultDatetime.toLocalDate(),
+                etime = evtDateTime?.toLocalTime() ?: defaultDatetime.toLocalTime()
+            )
     }
 
 }

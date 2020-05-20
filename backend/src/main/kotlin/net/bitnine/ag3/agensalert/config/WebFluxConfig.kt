@@ -4,6 +4,7 @@ import net.bitnine.ag3.agensalert.gremlin.AgenspopHandler
 import net.bitnine.ag3.agensalert.event.EventAggHandler
 import net.bitnine.ag3.agensalert.event.EventQryHandler
 import net.bitnine.ag3.agensalert.event.EventRowHandler
+import net.bitnine.ag3.agensalert.storage.H2AdminHandler
 
 import org.h2.tools.Server
 import org.springframework.context.annotation.Bean
@@ -90,6 +91,14 @@ class WebApiConfiguration(private val properties: MonitorProperties) {
         PUT("/aggs/{id}", aggHandler::updateOne)
 //        DELETE("/aggs/{id}", aggHandler::deleteOne)
     }
+
+    @Bean
+    fun storageAdminRoute(adminHandler: H2AdminHandler) = coRouter {
+        GET("/admin/hello", adminHandler::hello)
+        GET("/admin/activate", adminHandler::changeState)
+        GET("/admin/batch/all", adminHandler::doBatchAll)
+    }
+
 }
 
 ///////////////////////////////////////////////////////

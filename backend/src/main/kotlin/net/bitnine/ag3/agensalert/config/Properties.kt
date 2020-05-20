@@ -10,7 +10,15 @@ import org.springframework.boot.context.properties.ConstructorBinding
 @ConstructorBinding
 @ConfigurationProperties(prefix = "agens.monitor")
 data class MonitorProperties(
-        val cronExpression: String = "*/10 * * * * ?",
+        val cronDaily: String = "0 5 1 * * ?",
+        val cronRealtime: String = "*/30 * * * * ?",
         val baseUri: String,
         val h2ConsolePort: String = "8182"
-)
+){
+
+    fun cronInterval() = cronRealtime.substring(
+            cronRealtime.indexOf('/')+1,
+            cronRealtime.indexOf('*',cronRealtime.indexOf('/')+2)
+        ).trimEnd().toLong()
+
+}
