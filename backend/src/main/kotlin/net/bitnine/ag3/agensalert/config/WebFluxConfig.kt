@@ -97,6 +97,7 @@ class WebApiConfiguration(private val properties: MonitorProperties) {
         GET("/admin/hello", adminHandler::hello)
         GET("/admin/activate", adminHandler::changeState)
         GET("/admin/batch/all", adminHandler::doBatchAll)
+        GET("/admin/realtime/test", adminHandler::doRealtimeTest)
     }
 
 }

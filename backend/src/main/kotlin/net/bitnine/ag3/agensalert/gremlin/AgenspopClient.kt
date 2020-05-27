@@ -112,4 +112,13 @@ class AgenspopClient(private val webClient: WebClient){
                     findVerticesWithDateRange(ids, fromDate, toDate),
                     findEdgesWithDateRange(ids, fromDate, toDate)
             )
+
+    // only used for test realtime
+    fun adminRemoveGraph(datasource: String) =
+            webClient.get()
+                    .uri("/admin/remove/"+datasource)
+                    .retrieve()
+                    .bodyToMono(Map::class.java)
+                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+
 }

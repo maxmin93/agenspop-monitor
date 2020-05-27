@@ -18,11 +18,12 @@ values (1, 'User no 1', 'user1', 'user1@users.com', 'user1.png'),
 --('northwind', 'new order of USA', 'g.V().hasLabel("order").has("ship_country","USA")'),
 --('northwind', 'new purchased', 'g.E().hasLabel("purchased")'),
 --('northwind', 'EDGE: sold', 'g.E().hasLabel("sold")'),
---('northwind', 'EDGE: ships', 'g.E().hasLabel("ships")');
+--('northwind', 'EDGE: ships', 'g.E().hasLabel("ships")')
+--('airroutes', 'EDGE: route', 'g.E().hasLabel("route")');
 
 
 --('airroutes', 'new airport', 'g.V().hasLabel("airport")'),
---('airroutes', 'EDGE: route', 'g.E().hasLabel("route")');
+--('airroutes', 'EDGE: contains', 'g.E().hasLabel("contains")'),
 
 ----------------------------------------------------------------
 

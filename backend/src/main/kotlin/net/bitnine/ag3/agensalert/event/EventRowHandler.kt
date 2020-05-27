@@ -25,6 +25,9 @@ class EventRowHandler(@Autowired val service: EventRowService) {
         return ServerResponse.ok().json().bodyAndAwait(rows)
     }
 
+/*
+http://localhost:8082/rows/search/date?qid=101&from=2019-01-21&to=2019-11-11
+ */
     // by datasource
     suspend fun searchDate(request: ServerRequest): ServerResponse {
         val criterias = request.queryParams()
@@ -51,6 +54,9 @@ class EventRowHandler(@Autowired val service: EventRowService) {
         }
     }
 
+/*
+http://localhost:8082/rows/search/time?qid=101&date=2019-03-23&time=23:23:23
+ */
     // by datasource
     suspend fun searchTime(request: ServerRequest): ServerResponse {
         val criterias = request.queryParams()

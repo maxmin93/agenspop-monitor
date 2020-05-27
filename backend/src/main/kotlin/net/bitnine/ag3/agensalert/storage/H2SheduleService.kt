@@ -1,33 +1,33 @@
 package net.bitnine.ag3.agensalert.storage
 
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitFirst
+import kotlinx.coroutines.*
+import kotlinx.coroutines.NonCancellable.isActive
+import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitLast
 import net.bitnine.ag3.agensalert.config.MonitorProperties
-import net.bitnine.ag3.agensalert.event.EventAggRepository
 import net.bitnine.ag3.agensalert.event.EventQryRepository
-import net.bitnine.ag3.agensalert.event.EventRow
 import net.bitnine.ag3.agensalert.event.EventRowRepository
 import net.bitnine.ag3.agensalert.gremlin.AgenspopClient
 import net.bitnine.ag3.agensalert.gremlin.AgenspopUtil
-
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.io.ClassPathResource
 import org.springframework.data.r2dbc.core.DatabaseClient
-import org.springframework.data.r2dbc.core.awaitFirst
-import org.springframework.data.r2dbc.core.awaitRowsUpdated
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.toMono
+import java.io.BufferedReader
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.atomic.AtomicLong
 import javax.annotation.PostConstruct
-import javax.swing.text.DateFormatter
+import kotlin.streams.toList
+
 
 // **참고: Kotlin으로 서버 백엔드 개발
 // https://engineering.linecorp.com/ko/blog/server-side-kotlin-clova-skill-challenge/
@@ -300,6 +300,90 @@ order by edate, qid
         }
     }
 
+    suspend fun realtimeTest(datasource:String) = runBlocking<Unit> {
+
+        // val resourcesPath = ResourceUtils.getFile("classpath:"+datasource+"/").toPath()
+        val resourcesPath = Paths.get( ClassPathResource(datasource).uri )
+        val files = Files.walk(resourcesPath)
+                .filter { item -> Files.isRegularFile(item) }
+                .filter { item -> item.toString().endsWith(".csv") }
+                .toList()
+
+        for( fpath in files ){
+            println("filename: ${fpath.fileName}")
+        }
+
+        val removed = client.adminRemoveGraph(datasource).awaitFirstOrNull()
+        println("remove graph[$datasource] => $removed"+"\n")
+
+        val tempFiles = files.filter { it.toString().endsWith("-edges-route.csv") }
+        if (tempFiles.isEmpty()) return@runBlocking
+
+        // Helper class: RealtimeTester
+
+        val file1 = files.filter { it.toString().endsWith("-nodes-country.csv") }
+        if (file1.isEmpty().not()){
+            println("\nstart Nodes.Country from ${file1.first().fileName}")
+            delay(1500L)
+            RealtimeTester.importNodesCountry(file1.first(), client, datasource)
+        }
+
+        val file2 = files.filter { it.toString().endsWith("-nodes-airport.csv") }
+        if (file2.isEmpty().not()){
+            println("\nstart Nodes.Airport from ${file2.first().fileName}")
+            delay(1500L)
+            RealtimeTester.importNodesAirport(file2.first(), client, datasource)
+        }
+
+        delay(500L)
+
+        val file3 = files.filter { it.toString().endsWith("-edges-contains_country.csv") }
+        if (file3.isEmpty().not()){
+            println("\nstart Edges.Contains from ${file3.first().fileName}")
+            delay(1500L)
+            RealtimeTester.importEdgesContains(file3.first(), client, datasource)
+        }
+
+        val file4 = files.filter { it.toString().endsWith("-edges-route.csv") }
+        if (file4.isEmpty().not()){
+            println("\nstart Edges.Route from ${file4.first().fileName}")
+            delay(1500L)
+            RealtimeTester.importEdgesRoute(file4.first(), client, datasource)
+        }
+
+/*
+        // **NOTE: 매우 중요 ==> Dispatchers.Default
+        //      - 이거 안넘겨주면 절대 멈추지 않는다. forever
+
+        val startTime = System.currentTimeMillis()
+        val job = launch(context = Dispatchers.Default) {
+            var nextPrintTime = startTime
+            var i = 0
+//            while (isActive) { // cancellable computation loop
+//                // print a message twice a second
+//                if (System.currentTimeMillis() >= nextPrintTime) {
+//                    println("I'm sleeping ${i++} ...")
+//                    nextPrintTime += 500L
+//                }
+//            }
+
+            var line:String? = reader.readLine()
+            while( line != null ){
+                delay(100L)
+                println("[${counter.incrementAndGet()}] $line" )
+                line = reader.readLine()
+            }
+        }
+
+        // job.cancel() // cancels the job
+        job.join()
+        reader.close()
+
+        // cancels the job and waits for its completion
+        println("main: Now I can quit.")
+*/
+    }
+
     ////////////////////////////////////////////////////////
 
     operator fun ClosedRange<LocalDate>.iterator() : Iterator<LocalDate> {
@@ -321,3 +405,16 @@ order by edate, qid
         }
     }
 }
+
+/*
+class MyTask(private val name: String) : TimerTask() {
+    fun run() {
+        println(Thread.currentThread().toString() + " executing " +
+                name + " [" +
+                Date() + "]")
+    }
+    override fun run(p0: Timeout?) {
+        TODO("Not yet implemented")
+    }
+}
+ */
