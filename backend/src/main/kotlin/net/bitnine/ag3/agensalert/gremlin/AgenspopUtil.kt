@@ -56,11 +56,6 @@ object AgenspopUtil {
 //        val maxDate = results!!
 //                .maxBy { it.get("timestamp").toString() }!!.get("timestamp").toString()
 
-//        println("    --> groups = ${groups}")
-//        println("    --> labels = ${labels}")
-//        println("    --> ids.cnt = ${ids.size}, ${if (ids.size > 0) ids.first()+" .." else "<none>"}")
-//        println("    --> created = ${minDate} ~ ${maxDate}")
-
         return EventRow(id = null, qid = qry.id!!, type = groupValue,
                 ids_cnt = ids.size.toLong(), ids = ids.joinToString(separator = ","),
                 labels = labels.keys.joinToString(separator = ","),

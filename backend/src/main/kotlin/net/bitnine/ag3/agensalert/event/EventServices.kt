@@ -148,7 +148,6 @@ class EventRowService(
         if( rows.isNullOrEmpty() ) return emptyFlow()
 
         val idsSet = rows.flatMap{ it.ids!!.split(",") }.toSet()
-        println("${qid} ${fromDateTime} ==> ${idsSet}")
         return client.findElementsWithDateRange(idsSet.toList(), fromDateTime, null).asFlow()
     }
 
@@ -196,9 +195,6 @@ class EventAggService(
         // **NOTE: repository를 이용한 자유 쿼리는 안됨!!
         //     ==> EventAgg 생성자 호출하면서 오류남
         // val dateRange = repo.findDateRangeByQid(101).awaitFirstOrNull()
-
-        // println( "** dateRange: ${dateRange}")
-        // ==> dateRange: {FROM_DATE=2019-01-21, TO_DATE=2019-03-23, CNT=2}
 
         return dateRange
     }

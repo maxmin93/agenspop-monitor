@@ -68,15 +68,15 @@ class AgenspopClient(private val webClient: WebClient){
 
     fun execGremlin(datasource:String, script:String) =
             webClient.post()
-                    .uri("/graph/gremlin")
+                    .uri("/graph/gremlin/range")
                     .body(Mono.just(mapOf("datasource" to datasource, "q" to script)), Map::class.java)
                     .retrieve()
                     .bodyToFlux(Map::class.java)
                     .retryExponentialBackoff(3, Duration.ofMillis(200))
 
-    fun execGremlin(datasource:String, script:String, fromDate:String, toDate:String?=null) =
+    fun execGremlinWithRange(datasource:String, script:String, fromDate:String, toDate:String?=null) =
             webClient.post()
-                    .uri("/graph/gremlin")
+                    .uri("/graph/gremlin/range")
                     .body(Mono.just(
                             mapOf("datasource" to datasource, "q" to script
                             , "from" to fromDate, "to" to toDate

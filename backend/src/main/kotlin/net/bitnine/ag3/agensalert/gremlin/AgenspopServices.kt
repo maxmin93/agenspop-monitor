@@ -44,7 +44,7 @@ class AgenspopService(private val client: AgenspopClient){
             client.execGremlin(datasource, script).asFlow()
 
     suspend fun execGremlin(datasource:String, script: String, fromDate:String, toDate:String?=null) =
-            client.execGremlin(datasource, script, fromDate, toDate).asFlow()
+            client.execGremlinWithRange(datasource, script, fromDate, toDate).asFlow()
 
     suspend fun findIdsWithTimeRange(ids: List<String>, fromDate: String, fromTime: String?): Flow<Map<*, *>> {
 
@@ -59,7 +59,7 @@ class AgenspopService(private val client: AgenspopClient){
 //        if( dateValue == null || timeValue == null ) return emptyFlow()
 
         val fromDateTime = "${fromDate} ${if(fromTime.isNullOrBlank()) "00:00:00" else fromTime}"
-        println("findIdsWithTimeRange(${fromDateTime}~): ${ids}")
+        // println("findIdsWithTimeRange(${fromDateTime}~): ${ids}")
         return client.findElementsWithDateRange(ids, fromDateTime, null).asFlow()
     }
 

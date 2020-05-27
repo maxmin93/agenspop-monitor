@@ -41,6 +41,13 @@ const CY_CONFIG:any ={
 
 const INTERVAL_SECONDS:number = 30;   // 30 sec
 
+/*
+  1) 최근 10분 데이터 가져오기 : 30초 x 20
+  2) 이후 최근 30초 데이터 갱신
+    - 기존 elements 과 id 중복 여부 검사 : id 리스트는 어디서? cytoscape에서 가져오기
+    - 이상 없으면 chartData.append and refresh
+*/
+
 @Component({
   selector: 'app-monitor-realtime',
   templateUrl: './monitor-realtime.component.html',
@@ -105,7 +112,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
       this.qid = Number.parseInt(q);
 
       this.amApiService.findQueryWithDateRange(this.qid).subscribe(r=>{
-        console.log('query:', r);
+        // console.log('query:', r);
         if( !!r ){
           this.query = r;
           if( this.query.script ){
@@ -114,7 +121,8 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
             let ago10min:Date = new Date(Date.now() - (10 * 60 * 1000));    // 10 min ago
             let fromDate:string = DATE_UTILS.toYYYYMMDD(ago10min);
             let fromTime:string = DATE_UTILS.toHHMMDD(ago10min);
-        
+
+            // 10분전 데이터 가져오기
             this.loadEventsWithTimeRange(this.query.datasource, this.query.id, fromDate, fromTime);
             this.doInitChart(this.query.id, fromDate, fromTime);
           }
@@ -155,7 +163,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
       this.zone.runOutsideAngular(() =>{
         // create chart
         this.chart = this.initChart(this.chartData);
-        console.log(`timer(${0} x ${INTERVAL_SECONDS}s) => ${DATE_UTILS.toHHMMDD(this.end_dt)}, start..`);
+        // console.log(`timer(${0} x ${INTERVAL_SECONDS}s) => ${DATE_UTILS.toHHMMDD(this.end_dt)}, start..`);
 
         // interval start
         this.timerFetchNewData();
@@ -197,13 +205,14 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   }
 
   appendChartData(idx:number, end_dt:Date){
-    let from_dt:Date = new Date( end_dt.getTime() - (10*1000) );  // end_dt - 10s
+    let from_dt:Date = new Date( end_dt.getTime() - (40*1000) );  // end_dt - 40s
     let fromDate = DATE_UTILS.toYYYYMMDD(from_dt);
     let fromTime = DATE_UTILS.toHHMMDD(from_dt);
 
     let rows$ = this.amApiService.findRowsByQid(this.qid, fromDate, fromTime);
     rows$.pipe(map(q=><IRow[]>q)).subscribe(rows => {
       let sorted:IRow[] = _.sortBy(rows, ['edate','etime']);
+      console.log(`[${fromTime}]`, this.cy, sorted)
       let filtered = sorted.filter(t=>{
         let evtTimestamp = new Date(t.edate+'T'+t.etime).getTime();
         return evtTimestamp > from_dt.getTime();
@@ -212,10 +221,10 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
       // if result is empty, break out
       if( filtered.length == 0 ){
         let emptyRow = { date: this.end_dt, value: 0 };
-        console.log(`timer(${idx} x ${INTERVAL_SECONDS}s) => ${ DATE_UTILS.toHHMMDD(this.end_dt)}, ${emptyRow.value}`);
+        // console.log(`timer(${idx} x ${INTERVAL_SECONDS}s) => ${ DATE_UTILS.toHHMMDD(this.end_dt)}, ${emptyRow.value}`);
         // append new data to chartData ==> auto-refresh chart
-        this.chartData.data.push(emptyRow);
-        this.chart.data = [...this.chartData.data];
+        this.chartData.data.push(emptyRow);               // append empty row
+        this.chart.data = [...this.chartData.data];       // anyway do refresh
         return;
       }
 
@@ -229,6 +238,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
       let ids = filtered.map(e=>e.ids).join(',').split(',');
       let targets$ = this.amApiService.findIdsByTimeRange(ids, fromDate, fromTime);
+
       targets$.subscribe(r=>{
         let newEles = r.filter(x=>!this.cy.getElementById(x.data.id));
         newEles.forEach(e=>{ e.scratch['_etype']='target'; });
@@ -260,7 +270,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
     let secCount = DATE_UTILS.diffSeconds(chartData.startDate, chartData.endDate);
     let currTime:Date;
-    for( let idx=0; idx <= secCount; idx+=INTERVAL_SECONDS ){                             // until one more day
+    for( let idx=0; idx < secCount; idx+=INTERVAL_SECONDS ){                             // until one more day
       currTime = DATE_UTILS.afterSeconds(chartData.startDate, idx);
       let row:any = { date: currTime, value: 0 };    // value: Math.round(Math.random()*1000) };
 
@@ -371,7 +381,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     eles$.subscribe(r=>{
         this.g.datasource = datasource;
 
-        console.log("** gremlin =>", r);
+        console.log(`** gremlin [${qid},${from_date},${from_time}] =>`, r);
         let nodes = r.filter(e=>e.group == 'nodes').map(e=>{ e.scratch['_etype']='target'; return e; });
         let edges = r.filter(e=>e.group == 'edges').map(e=>{ e.scratch['_etype']='target'; return e; });
 

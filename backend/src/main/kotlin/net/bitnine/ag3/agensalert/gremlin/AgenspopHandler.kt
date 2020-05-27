@@ -275,7 +275,7 @@ class AgenspopHandler(@Autowired val service: AgenspopService) {
             val ids:List<String>? = params.get("q") as List<String>
             val fromDate:String? = params.get("date") as String
             val fromTime:String? = params.get("time") as String
-            println("findIdsWithTimeRange(${fromDate}T${fromTime}~): ${ids}")
+            // println("findIdsWithTimeRange(${fromDate}T${fromTime}~): ${ids}")
 
             if (ids.isNullOrEmpty() || fromDate.isNullOrBlank()) {
                 ServerResponse.badRequest().json()

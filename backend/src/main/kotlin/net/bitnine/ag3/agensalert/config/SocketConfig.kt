@@ -1,5 +1,6 @@
 package net.bitnine.ag3.agensalert.config
 
+import net.bitnine.ag3.agensalert.socket.EventPublishHandler
 import net.bitnine.ag3.agensalert.socket.PrimeNumbersHandler
 
 import org.springframework.context.annotation.Bean
@@ -16,7 +17,8 @@ import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAd
 @EnableWebFlux
 @ComponentScan(value = ["net.bitnine.ag3.agensalert.handler"])
 class ReactiveWebSocketConfig(
-        val primeNumbersHandler: PrimeNumbersHandler
+        val primeNumbersHandler: PrimeNumbersHandler,
+        val eventPublishHandler: EventPublishHandler
 ) {
     @Bean
     fun websocketHandlerAdapter() = WebSocketHandlerAdapter()
@@ -28,7 +30,8 @@ class ReactiveWebSocketConfig(
     fun handlerMapping() : HandlerMapping {
         val handlerMapping = SimpleUrlHandlerMapping()
         handlerMapping.urlMap = mapOf(
-                "/ws/primes" to primeNumbersHandler
+                "/ws/primes" to primeNumbersHandler,
+                "/ws/events" to eventPublishHandler
                 )
         handlerMapping.order = 1
         handlerMapping.setCorsConfigurations(

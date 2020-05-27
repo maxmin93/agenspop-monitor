@@ -94,7 +94,7 @@ class H2SheduleService(
 
         qryRepository.findAllNotDeleted().subscribe {
             val query = it
-            client.execGremlin(it.datasource, it.script, dtFormatter.format(fromTime), null)
+            client.execGremlinWithRange(it.datasource, it.script, dtFormatter.format(fromTime), null)
                 .filter{ e-> !e.isNullOrEmpty() && e.containsKey("group") && e.containsKey("data") && e.containsKey("scratch") }
                 .map{ e-> mapOf<String,String>(
                         "group" to e.get("group").toString(),
@@ -163,7 +163,7 @@ order by edate, qid;""")
         for( query in queries!! ){
 
             println("- get query[${query.id}]... ${query.script}")
-            val results = client.execGremlin(query.datasource, query.script, dtFormatter.format(fromTime), null)
+            val results = client.execGremlinWithRange(query.datasource, query.script, dtFormatter.format(fromTime), null)
                 .filter { e -> !e.isNullOrEmpty() && e.containsKey("group") && e.containsKey("data") && e.containsKey("scratch") }
                 .map { e ->
                     mapOf<String, String>(

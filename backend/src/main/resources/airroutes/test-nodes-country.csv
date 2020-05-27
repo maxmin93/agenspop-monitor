@@ -1,0 +1,238 @@
+_id,code,desc
+3422,AF,Afghanistan
+3423,AL,Albania
+3424,DZ,Algeria
+3425,AS,American Samoa
+3426,AD,Andorra
+3427,AO,Angola
+3428,AI,Anguilla
+3429,AG,Antigua and Barbuda
+3430,AR,Argentina
+3431,AM,Armenia
+3432,AW,Aruba
+3433,AT,Austria
+3434,AU,Australia
+3435,AZ,Azerbajan
+3436,BS,Bahamas
+3437,BH,Bahrain
+3438,BD,Bangladesh
+3439,BB,Barbados
+3440,BY,Belarus
+3441,BE,Belgium
+3442,BZ,Belize
+3443,BJ,Benin
+3444,BM,Bermuda
+3445,BT,Bhutan
+3446,BO,Bolivia
+3447,BQ,Bonaire - Sint Eustatius and Saba
+3448,BA,Bosnia and Herzegovina
+3449,BW,Botswana
+3450,BR,Brazil
+3451,VG,British Virgin Islands
+3452,BN,Brunei
+3453,BG,Bulgaria
+3454,BF,Burkina Faso
+3455,BI,Burundi
+3456,KH,Cambodia
+3457,CM,Cameroon
+3458,CV,Cabo Verde
+3459,CA,Canada
+3460,KY,Cayman Islands
+3461,CF,Central African Republic
+3462,TD,Chad
+3463,CL,Chile
+3464,CN,China
+3465,CX,Christmas Island
+3466,CO,Colombia
+3467,CG,Congo
+3468,CK,Cook Islands
+3469,CR,Costa Rica
+3470,CI,Côte d'Ivoire
+3471,CC,Cocos (Keeling) Islands
+3472,KM,Comoros
+3473,HR,Croatia
+3474,CU,Cuba
+3475,CW,Curacao
+3476,CY,Cyprus
+3477,CZ,Czech Republic
+3478,KP,Democratic People's Republic of Korea
+3479,CD,Democratic Republic of the Congo
+3480,DK,Denmark
+3481,DJ,Djibouti
+3482,DM,Dominica
+3483,DO,Dominican Republic
+3484,DE,Germany
+3485,GL,Greenland
+3486,EC,Ecuador
+3487,EG,Egypt
+3488,SV,El Salvador
+3489,ER,Eritrea
+3490,EE,Estonia
+3491,ET,Ethiopia
+3492,GQ,Equatorial Guinea
+3493,FK,Falkland Islands
+3494,FO,Faroe Islands
+3495,FM,Federated States of Micronesia
+3496,FJ,Fiji
+3497,FI,Finland
+3498,FR,France
+3499,GF,French Guiana
+3500,PF,French Polynesia
+3501,GA,Gabon
+3502,GM,Gambia
+3503,GE,Georgia
+3504,GH,Ghana
+3505,GI,Gibraltar
+3506,GR,Greece
+3507,GD,Grenada
+3508,GU,Guam
+3509,GP,Guadeloupe
+3510,GT,Guatemala
+3511,GG,Guernsey
+3512,GN,Guinea
+3513,GW,Guinea-Bissau
+3514,GY,Guyana
+3515,HT,Haiti
+3516,HN,Honduras
+3517,HK,Hong Kong
+3518,HU,Hungary
+3519,IS,Iceland
+3520,IN,India
+3521,ID,Indonesia
+3522,IQ,Iraq
+3523,IR,Iran
+3524,IE,Ireland
+3525,IM,Isle of Man
+3526,IL,Israel
+3527,IT,Italy
+3528,JM,Jamaica
+3529,JP,Japan
+3530,JE,Jersey
+3531,JO,Jordan
+3532,KZ,Kazakhstan
+3533,KE,Kenya
+3534,KI,Kiribati
+3535,KS,Kosovo
+3536,KW,Kuwait
+3537,KG,Kyrgyzstan
+3538,LA,Lao PDR
+3539,LV,Latvia
+3540,LB,Lebanon
+3541,LS,Lesotho
+3542,LR,Liberia
+3543,LY,Libya
+3544,LI,Liechtenstein
+3545,LT,Lithuania
+3546,LU,Luxembourg
+3547,MO,Macau
+3548,MK,Macedonia
+3549,MG,Madagascar
+3550,MW,Malawi
+3551,MY,Malaysia
+3552,ML,Mali
+3553,MT,Malta
+3554,MV,Maldives
+3555,MH,Marshall Islands
+3556,MQ,Martinique
+3557,MR,Mauritania
+3558,MU,Mauritius
+3559,YT,Mayotte
+3560,MM,Myanmar
+3561,MX,Mexico
+3562,MC,Monaco
+3563,ME,Montenegro
+3564,MN,Mongolia
+3565,MS,Montserrat
+3566,MA,Morocco
+3567,MD,Moldova
+3568,MZ,Mozambique
+3569,NA,Namibia
+3570,NR,Nauru
+3571,NP,Nepal
+3572,NL,Netherlands
+3573,NC,New Caledonia
+3574,NI,Nicaragua
+3575,NE,Niger
+3576,NG,Nigeria
+3577,NF,Norfolk Island
+3578,MP,Northern Mariana Islands
+3579,NO,Norway
+3580,NZ,New Zealand
+3581,OM,Oman
+3582,PA,Panama
+3583,PK,Pakistan
+3584,PG,Papua New Guinea
+3585,PY,Paraguay
+3586,PW,Palau
+3587,PE,Peru
+3588,PH,Philippines
+3589,PN,Pitcairn
+3590,PL,Poland
+3591,PT,Portugal
+3592,PR,Puerto Rico
+3593,QA,Qatar
+3594,KR,Republic of Korea
+3595,RE,Reunion
+3596,RO,Romania
+3597,RU,Russian Federation
+3598,RW,Rwanda
+3599,BL,Saint-Barthelemy
+3600,SH,Saint Helena
+3601,KN,Saint Kitts and Nevis
+3602,LC,Saint Lucia
+3603,MF,Saint-Martin (France)
+3604,PM,Saint Pierre and Miquelon
+3605,VC,Saint Vincent and Grenadines
+3606,WS,Samoa
+3607,SM,San Marino
+3608,ST,Sao Tome and Principe
+3609,SA,Saudi Arabia
+3610,SR,Suriname
+3611,SC,Seychelles
+3612,SL,Sierra Leone
+3613,SN,Senegal
+3614,RS,Serbia
+3615,SG,Singapore
+3616,SX,Sint Martin
+3617,SK,Slovakia
+3618,SI,Slovenia
+3619,ES,Spain
+3620,SO,Somalia
+3621,SB,Solomon Islands
+3622,ZA,South Africa
+3623,SS,South Sudan
+3624,LK,Sri Lanka
+3625,SD,Sudan
+3626,SE,Sweden
+3627,SZ,Swaziland
+3628,CH,Switzerland
+3629,SY,Syrian Arab Republic
+3630,TW,Taiwan
+3631,TJ,Tajikistan
+3632,TZ,Tanzania
+3633,TG,Togo
+3634,TO,Tonga
+3635,TH,Thailand
+3636,TL,Timor-Leste
+3637,TT,Trinidad and Tobago
+3638,TN,Tunisia
+3639,TR,Turkey
+3640,TM,Turkmenistan
+3641,TC,Turks and Caicos Islands
+3642,TV,Tuvalu
+3643,UG,Uganda
+3644,UA,Ukraine
+3645,UK,United Kingdom
+3646,AE,United Arab Emirates
+3647,US,United States
+3648,UY,Uruguay
+3649,UZ,Uzbekistan
+3650,VU,Vanuatu
+3651,VE,Venezuela
+3652,VI,Virgin Islands (US)
+3653,VN,Viet Nam
+3654,WF,Wallis and Futuna Islands
+3655,EH,Western Sahara
+3656,YE,Yemen
+3657,ZM,Zambia
+3658,ZW,Zimbabwe

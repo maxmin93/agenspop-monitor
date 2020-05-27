@@ -19,9 +19,9 @@ class EventAggHandler(
     private val logger = LoggerFactory.getLogger(EventRowHandler::class.java)
 
     suspend fun hello(request: ServerRequest): ServerResponse {
-        val dateRange = service.findDateRange(101)
-        println( "** dateRange: ${dateRange}")
-        return ServerResponse.ok().json().bodyAndAwait(flowOf("{ \"msg\": \"Hello, EventAggHandler!\" }"))    //mapOf("msg" to "Hello, Spring!")))
+        return ServerResponse.ok().json().bodyAndAwait(
+                flowOf("{ \"msg\": \"Hello, EventAggHandler!\" }")
+            )    //mapOf("msg" to "Hello, Spring!")))
     }
 
     suspend fun findAll(request: ServerRequest): ServerResponse {

@@ -1,10 +1,17 @@
 export const DATE_UTILS = {
 
   toYYYYMMDD: (date: Date): string => {
-    return date.toISOString().split('T')[0];
+    let year = date.getFullYear();
+    let month = date.getMonth()+1;    // from 0 ~ to 11
+    let day = date.getDate();
+    return `${year}-${month < 10 ? '0'+month : ''+month}-${day < 10 ? '0'+day: ''+day}`;
   },
   toHHMMDD: (date: Date): string => {
-    return date.toISOString().split('T')[1].split('.')[0];
+    // **NOTE: toISODateString 은 zoneOffset=0 기반이라 시간이 맞지 않는다
+    let hour = date.getHours();
+    let minute = date.getMinutes();
+    let second = date.getSeconds();
+    return `${hour < 10 ? '0'+hour : ''+hour}:${minute < 10 ? '0'+minute : ''+minute}:${second < 10 ? '0'+second: ''+second}`;
   },
 
   afterDays: (from: Date, days: number): Date => {
