@@ -300,7 +300,7 @@ order by edate, qid
         }
     }
 
-    suspend fun realtimeTest(datasource:String) = runBlocking<Unit> {
+    suspend fun realtimeReset(datasource:String) = runBlocking<Unit> {
 
         // val resourcesPath = ResourceUtils.getFile("classpath:"+datasource+"/").toPath()
         val resourcesPath = Paths.get( ClassPathResource(datasource).uri )
@@ -315,9 +315,6 @@ order by edate, qid
 
         val removed = client.adminRemoveGraph(datasource).awaitFirstOrNull()
         println("remove graph[$datasource] => $removed"+"\n")
-
-        val tempFiles = files.filter { it.toString().endsWith("-edges-route.csv") }
-        if (tempFiles.isEmpty()) return@runBlocking
 
         // Helper class: RealtimeTester
 
@@ -344,12 +341,12 @@ order by edate, qid
             RealtimeTester.importEdgesContains(file3.first(), client, datasource)
         }
 
-        val file4 = files.filter { it.toString().endsWith("-edges-route.csv") }
-        if (file4.isEmpty().not()){
-            println("\nstart Edges.Route from ${file4.first().fileName}")
-            delay(1500L)
-            RealtimeTester.importEdgesRoute(file4.first(), client, datasource)
-        }
+//        val file4 = files.filter { it.toString().endsWith("-edges-route.csv") }
+//        if (file4.isEmpty().not()){
+//            println("\nstart Edges.Route from ${file4.first().fileName}")
+//            delay(1500L)
+//            RealtimeTester.importEdgesRoute(file4.first(), client, datasource)
+//        }
 
 /*
         // **NOTE: 매우 중요 ==> Dispatchers.Default
@@ -382,6 +379,37 @@ order by edate, qid
         // cancels the job and waits for its completion
         println("main: Now I can quit.")
 */
+    }
+
+    suspend fun realtimeTest(datasource:String, activeSec:Long=130L) = runBlocking<Unit> {
+        // val resourcesPath = ResourceUtils.getFile("classpath:"+datasource+"/").toPath()
+        val resourcesPath = Paths.get( ClassPathResource(datasource).uri )
+        val files = Files.walk(resourcesPath)
+                .filter { item -> Files.isRegularFile(item) }
+                .filter { item -> item.toString().endsWith(".csv") }
+                .toList()
+
+        val tempFiles = files.filter { it.toString().endsWith("-edges-route.csv") }
+        if (tempFiles.isEmpty()) return@runBlocking
+
+        // remove data from agenspop
+        val script = "g.E().hasLabel('route').drop()"
+        val res = client.execGremlin(datasource, script).awaitFirstOrNull()
+        println("[api] ${datasource}_${script} -> ${res?.isNotEmpty()}")
+
+        // remove data from embeded-db
+        val updated:Int? = db.execute("DELETE FROM EVENT_ROW WHERE labels = :label")
+                .bind("label", "route")
+                .fetch().rowsUpdated().awaitFirstOrNull()
+        println("[db] EVENT_ROW where labels='route' -> ${updated}")
+
+        // Helper class: RealtimeTester
+        val file4 = files.filter { it.toString().endsWith("-edges-route.csv") }
+        if (file4.isEmpty().not()){
+            println("\nstart Edges.Route from ${file4.first().fileName}")
+            delay(1500L)
+            RealtimeTester.importEdgesRoute(file4.first(), client, datasource, activeSec)
+        }
     }
 
     ////////////////////////////////////////////////////////

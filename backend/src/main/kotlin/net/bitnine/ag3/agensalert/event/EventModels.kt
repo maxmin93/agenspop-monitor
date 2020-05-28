@@ -87,7 +87,7 @@ class EventQryDateRange(
         val from_date: LocalDate? = null,
         @JsonFormat(pattern="yyyy-MM-dd")
         val to_date: LocalDate? = null,
-        val cnt: Long = 0L
+        val cnt: Long? = 0L
 )
 
 data class EventDTO(

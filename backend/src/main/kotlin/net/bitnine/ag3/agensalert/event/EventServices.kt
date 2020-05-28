@@ -58,7 +58,7 @@ class EventQryService(
                 script = dateRange.get("SCRIPT") as String,
                 from_date = dateRange.get("FROM_DATE") as LocalDate?,
                 to_date = dateRange.get("TO_DATE") as LocalDate?,
-                cnt = dateRange.get("CNT") as Long
+                cnt = dateRange.get("CNT") as Long?
         )
     }
 }
@@ -151,8 +151,12 @@ class EventRowService(
         return client.findElementsWithDateRange(idsSet.toList(), fromDateTime, null).asFlow()
     }
 
-    // ** NOTE: modern 데이터와 rows 수집시 기록과 시간적 오차가 있다 ==> 동작은 되는거 확인함
-    // http://localhost:8082/rows/search/time?qid=101&date=2019-03-23&time=02:15:17
+    suspend fun removeRowsByQid(qid: Long): Int {
+        val updated:Int? = db.execute("DELETE FROM EVENT_ROW WHERE qid = :qid")
+                .bind("qid",qid)
+                .fetch().rowsUpdated().awaitFirstOrNull()
+        return updated ?: -1
+    }
 
 }
 
@@ -197,6 +201,13 @@ class EventAggService(
         // val dateRange = repo.findDateRangeByQid(101).awaitFirstOrNull()
 
         return dateRange
+    }
+
+    suspend fun removeAggsByQid(qid: Long): Int {
+        val updated:Int? = db.execute("DELETE FROM EVENT_AGG WHERE qid = :qid")
+                .bind("qid",qid)
+                .fetch().rowsUpdated().awaitFirstOrNull()
+        return updated ?: -1
     }
 
 }

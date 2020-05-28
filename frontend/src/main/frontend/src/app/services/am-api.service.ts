@@ -217,6 +217,8 @@ export class AmApiService {
 
   public findEventsWithDateRange(qid:number, from_date:string, to_date:string){
     let uri = this.apiUrl+'/rows/search/date?qid='+qid+'&from='+from_date+'&to='+to_date;
+    console.log('findEventsWithDateRange:', uri);
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
     .pipe(
@@ -239,6 +241,7 @@ export class AmApiService {
     let uri = this.apiUrl+'/agens/ids/range';
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     let params = { q: ids, date: fromDate, time: fromTime };
+    console.log('findIdsByTimeRange', params);
     return this._http.post<IElement[]>( uri, params, { headers : headers })
       .pipe(
         catchError(this.handleError)

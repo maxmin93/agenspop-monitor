@@ -21,7 +21,7 @@ values (1, 'User no 1', 'user1', 'user1@users.com', 'user1.png'),
 --('northwind', 'EDGE: ships', 'g.E().hasLabel("ships")')
 --('airroutes', 'EDGE: route', 'g.E().hasLabel("route")');
 
-
+-- insert into event_qry(datasource, name, script) values ('airroutes', 'EDGE: route', 'g.E().hasLabel("route")');
 --('airroutes', 'new airport', 'g.V().hasLabel("airport")'),
 --('airroutes', 'EDGE: contains', 'g.E().hasLabel("contains")'),
 

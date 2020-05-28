@@ -1,6 +1,6 @@
 import { Component, ViewChild, ElementRef, NgZone, OnInit, AfterViewInit, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, fromEvent, interval } from 'rxjs';
+import { Observable, fromEvent, interval, of } from 'rxjs';
 import { map, filter, debounceTime, timeInterval } from 'rxjs/operators';
 
 import { AmApiService } from '../../services/am-api.service';
@@ -24,7 +24,7 @@ declare const tippy:any;
 declare const jQuery:any;
 
 const CY_CONFIG:any ={
-  layout: { name: "euler"
+  layout: { name: "random"
     , fit: true, padding: 50, randomize: true, animate: false, positions: undefined
     , zoom: undefined, pan: undefined, ready: undefined, stop: undefined
   },
@@ -57,9 +57,9 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
   qid:number;
   rows:IRow[] = [];
-  query:any = {   // IQueryWithDateRange
-    id: null, name: 'unknown',
-    datasource: 'unknown', query: null, slicedQry: null,
+  query: any = {   // IQueryWithDateRange
+    id: 0, name: 'unknown',
+    datasource: 'unknown', query: '', slicedQry: '',
     from_date: null, to_date: null, cnt: 0
   };
 
@@ -77,6 +77,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   private g:IGraph = EMPTY_GRAPH;
   cy: any = undefined;                  // cytoscape.js
   readyEmitter = new EventEmitter<boolean>();
+  //readyEmitter = new EventEmitter<boolean>();
   tippyHandlers:any[] = [];
 
   private cyPrevEvent:IUserEvent = { type: undefined, data: undefined };  // 중복 idle 이벤트 제거용
@@ -110,34 +111,46 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
         return;
       }
       this.qid = Number.parseInt(q);
-
-      this.amApiService.findQueryWithDateRange(this.qid).subscribe(r=>{
-        // console.log('query:', r);
-        if( !!r ){
-          this.query = r;
-          if( this.query.script ){
-            this.query['slicedQry'] = this.query.script.substr(0,100);
-
-            let ago10min:Date = new Date(Date.now() - (10 * 60 * 1000));    // 10 min ago
-            let fromDate:string = DATE_UTILS.toYYYYMMDD(ago10min);
-            let fromTime:string = DATE_UTILS.toHHMMDD(ago10min);
-
-            // 10분전 데이터 가져오기
-            this.loadEventsWithTimeRange(this.query.datasource, this.query.id, fromDate, fromTime);
-            this.doInitChart(this.query.id, fromDate, fromTime);
-          }
-        }
-      });
     });
   }
 
   ngAfterViewInit() {
-    // graph data ready
-    this.readyEmitter.subscribe(r=>{
-      if( r ){
-        this.initGraph(this.g);
+    // **NOTE: 데이터가 없는 경우가 많다.
+    //   => 없어도 그래프와 차트는 기본으로 생성해야 함
+
+    this.initGraph(this.g);     // 현재 시점에서는 빈 그래프
+
+
+    this.amApiService.findQueryWithDateRange(this.qid).subscribe(r=>{
+      // console.log('query:', r);
+      if( !!r ){
+        this.query = r;
+        if( this.query.script ){
+          this.query['slicedQry'] = this.query.script.substr(0,100);
+
+          let ago10min:Date = new Date(Date.now() - (10 * 60 * 1000));    // 10 min ago
+          let fromDate:string = DATE_UTILS.toYYYYMMDD(ago10min);
+          let fromTime:string = DATE_UTILS.toHHMMDD(ago10min);
+
+          // 10분전 데이터 가져오기 -> readyEvent 발생
+
+          // load graph data since fromDate, fromTime
+          this.loadEventsWithTimeRange(this.query.datasource, this.query.id, fromDate, fromTime);
+          // load chart data since fromDate, fromTime
+          this.doInitChart(this.query.id, fromDate, fromTime);
+        }
       }
     });
+
+    // if ready graph data, then create canvas by cytoscape
+    this.readyEmitter.subscribe(r=>{
+      if( r ){
+        console.log('ready!', this.g);
+        this.loadGraphData(this.g);
+      }
+    });
+
+    // Event : time scroll move
     this.scrollEmitter.subscribe(r=>{
       console.log("dragstop:", r.target, DATE_UTILS.toYYYYMMDD(new Date(r.value)));
       if( r.target == 'start' ) this.start_dt = new Date(r.value);
@@ -191,7 +204,21 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   }
 
   btnCanvasFit(){
-    if( this.cy ) this.cy.fit( this.cy.elements(), 50);
+    if( this.cy ){
+      // this.cy.fit( this.cy.elements(), 50);
+
+      // ready
+      // this.cy.scratch('_datasource', this.g.datasource);
+      // this.cy.nodes().forEach(e => this.setStyleNode(e));
+      // this.cy.edges().forEach(e => this.setStyleEdge(e));
+
+      setTimeout(()=>{
+        this.cy.elements().layout({
+          name: 'euler', randomize: true,	animate: false, fit: true, padding: 50
+        }).run();
+        // this.cy.resize();
+      }, 300);
+    }
   }
 
   /////////////////////////////////////////////////////////////////////////
@@ -212,11 +239,11 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     let rows$ = this.amApiService.findRowsByQid(this.qid, fromDate, fromTime);
     rows$.pipe(map(q=><IRow[]>q)).subscribe(rows => {
       let sorted:IRow[] = _.sortBy(rows, ['edate','etime']);
-      console.log(`[${fromTime}]`, this.cy, sorted)
       let filtered = sorted.filter(t=>{
         let evtTimestamp = new Date(t.edate+'T'+t.etime).getTime();
         return evtTimestamp > from_dt.getTime();
       });
+      console.log(`[${fromTime}]`, sorted, filtered);
 
       // if result is empty, break out
       if( filtered.length == 0 ){
@@ -240,13 +267,41 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
       let targets$ = this.amApiService.findIdsByTimeRange(ids, fromDate, fromTime);
 
       targets$.subscribe(r=>{
-        let newEles = r.filter(x=>!this.cy.getElementById(x.data.id));
+        console.log('new elements =>', r);
+        let newEles = r.filter(x=>this.cy.getElementById(x.data.id).size()==0);
+
         newEles.forEach(e=>{ e.scratch['_etype']='target'; });
         this.g.nodes = this.g.nodes.concat( newEles.filter(x=>x.group == 'nodes') );
         this.g.edges = this.g.edges.concat( newEles.filter(x=>x.group == 'edges') );
-        let elements = this.cy.add( newEles );
-        elements.filter(e=>e.isNode()).forEach(e=>this.setStyleNode(e));
-        elements.filter(e=>e.isNode()).forEach(e=>this.setStyleEdge(e));
+
+        let newEdges = newEles.filter(e=>e.group=='edges');
+        if( newEdges.length > 0 ){
+          // get connected vertices of edges
+          let eids = newEdges.map(e=>e.data.id);
+          this.amApiService.findConnectedVertices(this.g.datasource, eids).pipe(
+              map(e=>{ e.forEach(x=>x.scratch['_etype']='neighbor'); return e; })
+            ).subscribe(x=>{
+              let neighbors = x.filter(e=>e.group == 'nodes' && this.cy.getElementById(e.data.id).size()==0);
+              let neighborNodes = this.cy.add( neighbors );
+              neighborNodes.forEach(e=>this.setStyleNode(e));
+              let targetEdges = this.cy.add( newEdges );
+              targetEdges.forEach(e=>this.setStyleEdge(e));
+            });
+        }
+
+        let newNodes = newEles.filter(e=>e.group=='nodes');
+        if( newNodes.length > 0 ){
+          let targetNodes = this.cy.add( newEles );
+          targetNodes.forEach(e=>this.setStyleNode(e));
+        }
+
+        setTimeout(()=>{
+          this.cy.elements().layout({
+            name: 'euler', randomize: true,	animate: false, fit: true, padding: 50
+          }).run();
+          // this.cy.resize();
+        }, 500);
+
       });
     });
   }
@@ -539,6 +594,38 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     });
 
     this.cyInit(config);
+  }
+
+  loadGraphData(g:IGraph){
+    let vids = new Map<string,IElement>( g.nodes.map((e,i)=>{
+      e.scratch['_idx'] = i;    // for elgrapho
+      return [e.data.id, e];
+    }) );
+    g.edges = this.connectedEdges( g.edges, vids);
+
+    g.labels.edges = this.getLabels(g.edges);
+    g.labels.nodes = this.getLabels(g.nodes);
+    this.setColors(g.labels);
+
+    this.cy.batch(()=>{
+      this.cy.add( g.nodes );
+      this.cy.add( g.edges );
+    });
+
+    Promise.resolve(null).then(() => {
+      // ready
+      this.cy.scratch('_datasource', g.datasource);
+      this.cy.nodes().forEach(e => this.setStyleNode(e));
+      this.cy.edges().forEach(e => this.setStyleEdge(e));
+    });
+
+    setTimeout(()=>{
+      console.log('loadGraphData: layout doing!');
+      this.cy.elements().layout({
+        name: 'euler', randomize: true,	animate: false, fit: true, padding: 50
+      }).run();
+      // this.cy.resize();
+    }, 300);
   }
 
   cyInit(config:any){

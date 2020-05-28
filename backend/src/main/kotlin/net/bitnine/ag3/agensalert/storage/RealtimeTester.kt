@@ -1,7 +1,12 @@
 package net.bitnine.ag3.agensalert.storage
 
-import kotlinx.coroutines.delay
+import javafx.application.Application.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.NonCancellable.isActive
+import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactive.awaitLast
+
 import net.bitnine.ag3.agensalert.gremlin.AgenspopClient
 import java.io.BufferedReader
 import java.io.File
@@ -124,28 +129,42 @@ object RealtimeTester {
         reader.close()
     }
 
-    suspend fun importEdgesRoute(filePath:Path, client: AgenspopClient, datasource:String){
+    suspend fun importEdgesRoute(filePath:Path, client: AgenspopClient, datasource:String, activeSec:Long)=runBlocking<Unit> {
         val label = "route"
         val counterResponse = AtomicLong(1L)
-        // val counterLine = AtomicLong(1L)
 
         val reader: BufferedReader = File(filePath.toUri()).bufferedReader(charset = Charset.forName("UTF-8"))
         var line:String? = reader.readLine()        // _id,group,item
         val cols = line!!.trim().split(",")
 
         line = reader.readLine()                     // first line after skip header
-        while( line.isNullOrBlank().not() ){
-            var randNum = (100..500).random()   // random delay
-            delay(randNum.toLong())                  // for safety
+        val job = launch(context = Dispatchers.Default) {
+            while (isActive && line.isNullOrBlank().not()) {
+                var randNum = (10..1010).random()   // random delay
+                delay(randNum.toLong())                  // for safety
 
-            val script:String = makeEdgeScript(datasource, label, "airport", "airport", cols, line!!)
-            client.execGremlin(datasource, script).subscribe {
-                val currResponse = counterResponse.incrementAndGet()
-                println("  -> ${currResponse} : ${it.isNotEmpty()}")
+                val script: String = makeEdgeScript(datasource, label, "airport", "airport", cols, line!!)
+                client.execGremlin(datasource, script).subscribe {
+                    val currResponse = counterResponse.incrementAndGet()
+                    println("  -> ${currResponse} : ${it.isNotEmpty()}")
+                }
+
+                //line = reader.readLine()                // next line
+
+                // 너무 한두개 노드에 집중된 route 들이 연달아 들어오는거 같아 건너뛰기 추가해봄
+                for(i in 1 until (2..100).random())
+                    line = reader.readLine()
             }
-            line = reader.readLine()                // next line
         }
 
+        println("  - this job is running for ${activeSec} sec. enjoy~\n")
+        if( activeSec > 0 ){
+            delay(activeSec * 1000L)
+            job.cancel()        // cancels the job
+            job.join()
+        }
+
+        println("  - this job is finished. inserted rows=${counterResponse.get()}\n")
         reader.close()
     }
 

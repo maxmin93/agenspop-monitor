@@ -119,10 +119,14 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     this.doInitChart();
+    // this.initGraph(this.g);     // empty graph
+
     // graph data ready
     this.readyEmitter.subscribe(r=>{
+      console.log('readyEmitter:', r);
       if( r ){
-        this.initGraph(this.g);
+        this.initGraph(this.g);     // empty graph
+        // this.loadGraphData(this.g);
       }
     });
     this.scrollEmitter.subscribe(r=>{
@@ -456,6 +460,24 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     });
 
     this.cyInit(config);
+  }
+
+  loadGraphData(g:IGraph){
+    console.log('loadGraphData:', g);
+    this.cy.batch(()=>{
+      if( this.g.nodes.length > 0 ){
+        this.cy.add( this.g.nodes );
+
+      }
+      if( this.g.edges.length > 0 ){
+        this.cy.add( this.g.edges );
+      }
+
+      // ready
+      this.cy.scratch('_datasource', g.datasource);
+      this.cy.nodes().forEach(e => this.setStyleNode(e));
+      this.cy.edges().forEach(e => this.setStyleEdge(e));
+    });
   }
 
   cyInit(config:any){
