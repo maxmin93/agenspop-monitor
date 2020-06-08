@@ -20,6 +20,10 @@ implementation("io.projectreactor.kotlin:reactor-kotlin-extensions:1.0.0.RELEASE
 testImplementation("io.mockk:mockk:1.9")
 ````
 
+### Frontend UI Template
+
+[ArchitectUI - Angular 7 Bootstrap 4](https://github.com/DashboardPack/architectui-angular-theme-free)
+
 ### Extra remarks
 - Had to manual set the h2 version to a previous one as r2dbc-h2 can't handle (yet) the changes in 1.4.200
 - Unit tests and Integration tests are including (100% coverage :))

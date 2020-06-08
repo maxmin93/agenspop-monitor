@@ -7,17 +7,26 @@ import net.bitnine.ag3.agensalert.event.EventRowHandler
 import net.bitnine.ag3.agensalert.storage.H2AdminHandler
 
 import org.h2.tools.Server
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.io.ClassPathResource
+import org.springframework.core.io.Resource
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType.TEXT_HTML
 import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.server.RouterFunction
+import org.springframework.web.reactive.function.server.RouterFunctions.resources
+import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.coRouter
+import org.springframework.web.reactive.function.server.router
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilter
 import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Mono
+import java.net.URI
 import java.sql.SQLException
 
 
@@ -101,6 +110,23 @@ class WebApiConfiguration(private val properties: MonitorProperties) {
         GET("/admin/realtime/test", adminHandler::doRealtimeTest)
     }
 
+    /////////////////////////////////
+    // frontend
+    // https://medium.com/@davidecerbo/serving-static-resources-with-spring-webflux-and-kotlin-ad831cbd26eb
+
+    @Bean
+    fun resRouter() = resources("/**", ClassPathResource("static/"))
+
+    @Bean
+    fun indexRouter(@Value("classpath:/static/index.html") html:
+                    Resource) = router {
+        GET("/") {
+            ok().contentType(TEXT_HTML).syncBody(html)
+        }
+        GET("/monitor") {
+            ok().contentType(TEXT_HTML).syncBody(html)
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////

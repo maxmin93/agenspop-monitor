@@ -44,14 +44,14 @@
       <tbody>
       <tr *ngFor="let item of queries | slice : (page-1)*pageSize : (page-1)*pageSize + pageSize; index as i">
         <th class="text-center text-muted" style="width: 80px;" scope="row">
-          <a [routerLink]="['/view']" [queryParams]="{qid: item.id}">{{ item.id }}</a>
+          <a [routerLink]="['/monitor/view']" [queryParams]="{qid: item.id}">{{ item.id }}</a>
         </th>
         <td class="text-left">{{ item.datasource }}</td>
         <td class="text-left" style="width: 160px;">
           <div class="widget-numbers fsize-1 text-danger" (click)="openQuery(queryModal, item)">{{ item.name }}</div>
         </td>
         <td class="text-center">
-          <a [routerLink]="['/realtime']" [queryParams]="{qid: item.id}">
+          <a [routerLink]="['/monitor/realtime']" [queryParams]="{qid: item.id}">
             <div *ngIf="item.active_yn == true" class="badge badge-pill badge-warning">In Progress</div>
           </a>
           <div *ngIf="item.active_yn != true" class="badge badge-pill badge-info">On Hold</div>
