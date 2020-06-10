@@ -8,6 +8,8 @@ import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitLast
 
 import net.bitnine.ag3.agensalert.gremlin.AgenspopClient
+import org.springframework.core.io.Resource
+import org.springframework.core.io.ResourceLoader
 import java.io.BufferedReader
 import java.io.File
 import java.nio.charset.Charset
@@ -57,115 +59,133 @@ object RealtimeTester {
         return script
     }
 
-    suspend fun importNodesCountry(filePath:Path, client: AgenspopClient, datasource:String){
+    suspend fun importNodesCountry(resourceLoader: ResourceLoader, filePath:Resource, client: AgenspopClient, datasource:String){
         val label = "country"
         val counterResponse = AtomicLong(1L)
-        // val counterLine = AtomicLong(1L)
 
-        val reader: BufferedReader = File(filePath.toUri()).bufferedReader(charset = Charset.forName("UTF-8"))
-        var line:String? = reader.readLine()        // _id,code,desc
-        val cols = line!!.trim().split(",")
+        // **NOTE: FileSystemNotFoundException
+        // https://github.com/spring-projects/spring-boot/issues/7161
 
-        line = reader.readLine()                    // first line after skip header
-        while( line.isNullOrBlank().not() ){
-            delay(10L)                   // for safety
-            val script:String = makeNodeScript(datasource, label, cols, line!!)
-            client.execGremlin(datasource, script).subscribe {
-                val currResponse = counterResponse.incrementAndGet()
-//                val idValue = (it.get("data") as Map<String,Any>).get("id")
-//                println("  -> ${currResponse} : ${it.isNotEmpty()} '${idValue}'")
-                println("  -> ${currResponse} : ${it.isNotEmpty()}")
-            }
-            // next line
+        // https://galid1.tistory.com/675
+        // **NOTE: getResource from 1) File System, 2) URL path, 3) Class path
+        val stream = resourceLoader.getResource(filePath.url.toString()).inputStream
+        val reader = BufferedReader(stream.reader())
+        try {
+            var line = reader.readLine()
+            val cols = line.trim().split(",")   // header
+
             line = reader.readLine()
+            while( line.isNullOrBlank().not() ){
+                delay(10L)                   // for safety
+                val script:String = makeNodeScript(datasource, label, cols, line!!)
+                client.execGremlin(datasource, script).subscribe {
+                    val currResponse = counterResponse.incrementAndGet()
+                    val idValue = (it.get("data") as Map<String,Any>).get("id")
+                    println("  -> ${currResponse} : ${it.isNotEmpty()} '${idValue}'")
+                }
+                line = reader.readLine()
+            }
         }
-
-        reader.close()
+        finally {
+            reader.close()
+        }
     }
 
-    suspend fun importNodesAirport(filePath:Path, client: AgenspopClient, datasource:String){
+    suspend fun importNodesAirport(resourceLoader: ResourceLoader, filePath:Resource, client: AgenspopClient, datasource:String){
         val label = "airport"
         val counterResponse = AtomicLong(1L)
-        // val counterLine = AtomicLong(1L)
 
-        val reader: BufferedReader = File(filePath.toUri()).bufferedReader(charset = Charset.forName("UTF-8"))
-        var line:String? = reader.readLine()        // _id,code,icao,desc,region,runways,longest,elev,country,city,lat,lon
-        val cols = line!!.trim().split(",")
+        val stream = resourceLoader.getResource(filePath.url.toString()).inputStream
+        val reader = BufferedReader(stream.reader())
+        try {
+            var line = reader.readLine()
+            val cols = line.trim().split(",")   // header
 
-        line = reader.readLine()                    // first line after skip header
-        while( line.isNullOrBlank().not() ){
-            delay(10L)                   // for safety
-            val script:String = makeNodeScript(datasource, label, cols, line!!)
-            client.execGremlin(datasource, script).subscribe {
-                val currResponse = counterResponse.incrementAndGet()
-                println("  -> ${currResponse} : ${it.isNotEmpty()}")
+            line = reader.readLine()
+            while( line.isNullOrBlank().not() ){
+                delay(10L)                   // for safety
+                val script:String = makeNodeScript(datasource, label, cols, line!!)
+                client.execGremlin(datasource, script).subscribe {
+                    val currResponse = counterResponse.incrementAndGet()
+                    val idValue = (it.get("data") as Map<String,Any>).get("id")
+                    println("  -> ${currResponse} : ${it.isNotEmpty()} '${idValue}'")
+                }
+                line = reader.readLine()
             }
-            line = reader.readLine()                // next line
         }
-
-        reader.close()
+        finally {
+            reader.close()
+        }
     }
 
-    suspend fun importEdgesContains(filePath:Path, client: AgenspopClient, datasource:String){
+    suspend fun importEdgesContains(resourceLoader: ResourceLoader, filePath:Resource, client: AgenspopClient, datasource:String){
         val label = "contains"
         val counterResponse = AtomicLong(1L)
-        // val counterLine = AtomicLong(1L)
 
-        val reader: BufferedReader = File(filePath.toUri()).bufferedReader(charset = Charset.forName("UTF-8"))
-        var line:String? = reader.readLine()        // _id,group,item
-        val cols = line!!.trim().split(",")
+        val stream = resourceLoader.getResource(filePath.url.toString()).inputStream
+        val reader = BufferedReader(stream.reader())
+        try {
+            var line = reader.readLine()
+            val cols = line.trim().split(",")   // header
 
-        line = reader.readLine()                    // first line after skip header
-        while( line.isNullOrBlank().not() ){
-            delay(10L)                   // for safety
-            val script:String = makeEdgeScript(datasource, label, "country", "airport", cols, line!!)
-            client.execGremlin(datasource, script).subscribe {
-                val currResponse = counterResponse.incrementAndGet()
-                println("  -> ${currResponse} : ${it.isNotEmpty()}")
+            line = reader.readLine()
+            while( line.isNullOrBlank().not() ){
+                delay(10L)                   // for safety
+                val script:String = makeEdgeScript(datasource, label, "country", "airport", cols, line!!)
+                client.execGremlin(datasource, script).subscribe {
+                    val currResponse = counterResponse.incrementAndGet()
+                    val idValue = (it.get("data") as Map<String,Any>).get("id")
+                    println("  -> ${currResponse} : ${it.isNotEmpty()} '${idValue}'")
+                }
+                line = reader.readLine()
             }
-            line = reader.readLine()                // next line
         }
-
-        reader.close()
+        finally {
+            reader.close()
+        }
     }
 
-    suspend fun importEdgesRoute(filePath:Path, client: AgenspopClient, datasource:String, activeSec:Long)=runBlocking<Unit> {
+    suspend fun importEdgesRoute(resourceLoader: ResourceLoader, filePath:Resource, client: AgenspopClient, datasource:String, activeSec:Long)=runBlocking<Unit> {
         val label = "route"
         val counterResponse = AtomicLong(1L)
 
-        val reader: BufferedReader = File(filePath.toUri()).bufferedReader(charset = Charset.forName("UTF-8"))
-        var line:String? = reader.readLine()        // _id,group,item
-        val cols = line!!.trim().split(",")
+        val stream = resourceLoader.getResource(filePath.url.toString()).inputStream
+        val reader = BufferedReader(stream.reader())
+        try {
+            var line = reader.readLine()
+            val cols = line.trim().split(",")   // header
 
-        line = reader.readLine()                     // first line after skip header
-        val job = launch(context = Dispatchers.Default) {
-            while (isActive && line.isNullOrBlank().not()) {
-                var randNum = (10..1010).random()   // random delay
-                delay(randNum.toLong())                  // for safety
+            val job = launch(context = Dispatchers.Default) {
+                line = reader.readLine()
+                while (isActive && line.isNullOrBlank().not()) {
+                    var randNum = (10..1010).random()   // random delay
+                    delay(randNum.toLong())                  // for safety
 
-                val script: String = makeEdgeScript(datasource, label, "airport", "airport", cols, line!!)
-                client.execGremlin(datasource, script).subscribe {
-                    val currResponse = counterResponse.incrementAndGet()
-                    println("  -> ${currResponse} : ${it.isNotEmpty()}")
+                    val script: String = makeEdgeScript(datasource, label, "airport", "airport", cols, line!!)
+                    client.execGremlin(datasource, script).subscribe {
+                        val currResponse = counterResponse.incrementAndGet()
+                        val idValue = (it.get("data") as Map<String,Any>).get("id")
+                        println("  -> ${currResponse} : ${it.isNotEmpty()} '${idValue}'")
+                    }
+                    //line = reader.readLine()                // next line
+
+                    // 너무 한두개 노드에 집중된 route 들이 연달아 들어오는거 같아 건너뛰기 추가해봄
+                    for(i in 1 until (2..100).random())
+                        line = reader.readLine()
                 }
+            }
 
-                //line = reader.readLine()                // next line
-
-                // 너무 한두개 노드에 집중된 route 들이 연달아 들어오는거 같아 건너뛰기 추가해봄
-                for(i in 1 until (2..100).random())
-                    line = reader.readLine()
+            println("  - this job is running for ${activeSec} sec. enjoy~\n")
+            if( activeSec > 0 ){
+                delay(activeSec * 1000L)
+                job.cancel()        // cancels the job
+                job.join()
             }
         }
-
-        println("  - this job is running for ${activeSec} sec. enjoy~\n")
-        if( activeSec > 0 ){
-            delay(activeSec * 1000L)
-            job.cancel()        // cancels the job
-            job.join()
+        finally {
+            println("  - this job is finished. inserted rows=${counterResponse.get()}\n")
+            reader.close()
         }
-
-        println("  - this job is finished. inserted rows=${counterResponse.get()}\n")
-        reader.close()
     }
 
 }

@@ -1,10 +1,10 @@
 package net.bitnine.ag3.agensalert.storage
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.NonCancellable.isActive
-import kotlinx.coroutines.channels.ticker
+import jdk.internal.util.xml.impl.Input
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitLast
+import kotlinx.coroutines.runBlocking
 import net.bitnine.ag3.agensalert.config.MonitorProperties
 import net.bitnine.ag3.agensalert.event.EventQryRepository
 import net.bitnine.ag3.agensalert.event.EventRowRepository
@@ -13,18 +13,23 @@ import net.bitnine.ag3.agensalert.gremlin.AgenspopUtil
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ClassPathResource
+import org.springframework.core.io.Resource
+import org.springframework.core.io.ResourceLoader
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver
+import org.springframework.core.io.support.ResourcePatternResolver
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
-import java.io.BufferedReader
-import java.io.File
+import org.springframework.util.ResourceUtils
+import java.io.InputStream
+import java.nio.file.FileSystems
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.atomic.AtomicLong
 import javax.annotation.PostConstruct
 import kotlin.streams.toList
 
@@ -38,7 +43,8 @@ class H2SheduleService(
         @Autowired val qryRepository: EventQryRepository,
         @Autowired val rowRepository: EventRowRepository,
         @Autowired val db: DatabaseClient,
-        @Autowired val client: AgenspopClient
+        @Autowired val client: AgenspopClient,
+        @Autowired val resourceLoader: ResourceLoader
 ){
 
     private val logger = LoggerFactory.getLogger(H2SheduleService::class.java)
@@ -226,53 +232,58 @@ order by edate, qid
 
     ////////////////////////////////////////////////////////
 
+    private fun getInputStreams(datasource: String): List<InputStream> {
+
+        var inputStreams = arrayListOf<InputStream>()
+        val resources = PathMatchingResourcePatternResolver().getResources("classpath:/$datasource/*.csv")
+        for (r in resources){
+            val istream = resourceLoader.getResource(r.uri.path).inputStream
+            println("  + ${r.filename} (${istream.available()}) => ${r.uri}")
+            inputStreams.add(istream)
+        }
+        return inputStreams
+    }
+
     suspend fun realtimeReset(datasource:String) = runBlocking<Unit> {
 
-        // val resourcesPath = ResourceUtils.getFile("classpath:"+datasource+"/").toPath()
-        val resourcesPath = Paths.get( ClassPathResource(datasource).uri )
-        val files = Files.walk(resourcesPath)
-                .filter { item -> Files.isRegularFile(item) }
-                .filter { item -> item.toString().endsWith(".csv") }
-                .toList()
-
-        for( fpath in files ){
-            println("filename: ${fpath.fileName}")
+        // print files
+        val resources = PathMatchingResourcePatternResolver().getResources("classpath:/$datasource/*.csv")
+        for (r in resources){
+            val stream = resourceLoader.getResource(r.url.toString()).inputStream
+            println("  + ${r.filename} (${stream.available()}) => ${r.url}")
         }
 
+        // remove datasource from agenspop
         val removed = client.adminRemoveGraph(datasource).awaitFirstOrNull()
         println("remove graph[$datasource] => $removed"+"\n")
 
         // Helper class: RealtimeTester
 
-        val file1 = files.filter { it.toString().endsWith("-nodes-country.csv") }
+        // val file1 = files.filter { it.toString().endsWith("-nodes-country.csv") }
+        val file1 = PathMatchingResourcePatternResolver().getResources("classpath:/$datasource/*-nodes-country.csv")
         if (file1.isEmpty().not()){
-            println("\nstart Nodes.Country from ${file1.first().fileName}")
+            println("\nstart Nodes.Country from ${file1.first().filename}")
             delay(1500L)
-            RealtimeTester.importNodesCountry(file1.first(), client, datasource)
+            RealtimeTester.importNodesCountry(resourceLoader, file1.first(), client, datasource)
         }
 
-        val file2 = files.filter { it.toString().endsWith("-nodes-airport.csv") }
+        // val file2 = files.filter { it.toString().endsWith("-nodes-airport.csv") }
+        val file2 = PathMatchingResourcePatternResolver().getResources("classpath:/$datasource/*-nodes-airport.csv")
         if (file2.isEmpty().not()){
-            println("\nstart Nodes.Airport from ${file2.first().fileName}")
+            println("\nstart Nodes.Airport from ${file2.first().filename}")
             delay(1500L)
-            RealtimeTester.importNodesAirport(file2.first(), client, datasource)
+            RealtimeTester.importNodesAirport(resourceLoader, file2.first(), client, datasource)
         }
 
         delay(500L)
 
-        val file3 = files.filter { it.toString().endsWith("-edges-contains_country.csv") }
+        // val file3 = files.filter { it.toString().endsWith("-edges-contains_country.csv") }
+        val file3 = PathMatchingResourcePatternResolver().getResources("classpath:/$datasource/*-edges-contains_country.csv")
         if (file3.isEmpty().not()){
-            println("\nstart Edges.Contains from ${file3.first().fileName}")
+            println("\nstart Edges.Contains from ${file3.first().filename}")
             delay(1500L)
-            RealtimeTester.importEdgesContains(file3.first(), client, datasource)
+            RealtimeTester.importEdgesContains(resourceLoader, file3.first(), client, datasource)
         }
-
-//        val file4 = files.filter { it.toString().endsWith("-edges-route.csv") }
-//        if (file4.isEmpty().not()){
-//            println("\nstart Edges.Route from ${file4.first().fileName}")
-//            delay(1500L)
-//            RealtimeTester.importEdgesRoute(file4.first(), client, datasource)
-//        }
 
 /*
         // **NOTE: 매우 중요 ==> Dispatchers.Default
@@ -308,14 +319,9 @@ order by edate, qid
     }
 
     suspend fun realtimeTest(datasource:String, activeSec:Long=130L) = runBlocking<Unit> {
-        // val resourcesPath = ResourceUtils.getFile("classpath:"+datasource+"/").toPath()
-        val resourcesPath = Paths.get( ClassPathResource(datasource).uri )
-        val files = Files.walk(resourcesPath)
-                .filter { item -> Files.isRegularFile(item) }
-                .filter { item -> item.toString().endsWith(".csv") }
-                .toList()
 
-        val tempFiles = files.filter { it.toString().endsWith("-edges-route.csv") }
+        // val tempFiles = files.filter { it.toString().endsWith("-edges-route.csv") }
+        val tempFiles = PathMatchingResourcePatternResolver().getResources("classpath:/$datasource/*-edges-route.csv")
         if (tempFiles.isEmpty()) return@runBlocking
 
         // remove data from agenspop
@@ -330,11 +336,13 @@ order by edate, qid
         println("[db] EVENT_ROW where labels='route' -> ${updated}")
 
         // Helper class: RealtimeTester
-        val file4 = files.filter { it.toString().endsWith("-edges-route.csv") }
+
+        // val file4 = files.filter { it.toString().endsWith("-edges-route.csv") }
+        val file4 = PathMatchingResourcePatternResolver().getResources("classpath:/$datasource/*-edges-route.csv")
         if (file4.isEmpty().not()){
-            println("\nstart Edges.Route from ${file4.first().fileName}")
+            println("\nstart Edges.Route from ${file4.first().filename}")
             delay(1500L)
-            RealtimeTester.importEdgesRoute(file4.first(), client, datasource, activeSec)
+            RealtimeTester.importEdgesRoute(resourceLoader, file4.first(), client, datasource, activeSec)
         }
     }
 

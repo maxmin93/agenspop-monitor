@@ -73,7 +73,7 @@ http://localhost:8082/admin/realtime/test?datasource=airroutes
     suspend fun doRealtimeReset(request: ServerRequest): ServerResponse {
         val params = request.queryParams()
 
-        // **NOTE: 왜 list of string 으로 받아오지?
+        // **NOTE: 왜 list of string 으로 받아오지? 암튼, first() 로 처리
         val datasource = params.get("datasource")?.first().toString()
         if( datasource.isNullOrBlank() ){
             return ServerResponse.badRequest().json()
@@ -94,7 +94,7 @@ http://localhost:8082/admin/realtime/test?datasource=airroutes
 
         // **NOTE: 왜 list of string 으로 받아오지?
         val datasource = params.getFirst("datasource")?.toString()
-        val activeSec:Long? = params.getFirst("sec")?.toLong()
+        val activeSec:Long = params.getFirst("sec")?.toLong() ?: 300L
         if( datasource.isNullOrBlank() ){
             return ServerResponse.badRequest().json()
                     .bodyValueAndAwait(ErrorMessage("Incorrect parameter value: "
@@ -102,7 +102,7 @@ http://localhost:8082/admin/realtime/test?datasource=airroutes
         }
 
         println("\ndoRealtimeTest to '${datasource}' for '$activeSec' sec as importing route edges...")
-        service.realtimeTest(datasource, activeSec ?: 130L)
+        service.realtimeTest(datasource, activeSec)
 
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)

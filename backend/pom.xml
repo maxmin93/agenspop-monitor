@@ -175,6 +175,25 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- airroutes 테스트 데이터 복사 -->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>validate</phase>
+                        <goals><goal>copy-resources</goal></goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/classes/resources/airroutes/</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/classes/airroutes/</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
             <!-- Normal Maven Compiler -->
             <plugin>
