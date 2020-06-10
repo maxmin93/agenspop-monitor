@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { AmApiService } from './services/am-api.service';
 
 @Component({
   selector: 'app-root',
@@ -8,7 +9,13 @@ import { Component } from '@angular/core';
 export class AppComponent {
   title = 'agens-alert';
 
-  constructor(){
-
+  constructor(
+    private amApiService: AmApiService,
+  ){
+    this.amApiService.findProductInfo().subscribe(x=>{
+      console.log('** config[agens]:', x);
+      localStorage.setItem('agens', x);
+      if( x.hasOwnProperty('debug')) localStorage.setItem('debug', x['debug']);
+    });
   }
 }

@@ -1,7 +1,7 @@
 import { Component, ViewChild, ElementRef, NgZone, OnInit, AfterViewInit, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, fromEvent, interval, of } from 'rxjs';
-import { map, filter, debounceTime, timeInterval } from 'rxjs/operators';
+import { Observable, fromEvent, interval, Subject } from 'rxjs';
+import { map, takeUntil, debounceTime, timeInterval } from 'rxjs/operators';
 
 import { AmApiService } from '../../services/am-api.service';
 import { IRow } from '../../services/agens-event-types';
@@ -74,9 +74,13 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
   private chart: am4charts.XYChart;
 
-  private g:IGraph = EMPTY_GRAPH;
+  private g:IGraph = _.cloneDeep(EMPTY_GRAPH);
   cy: any = undefined;                  // cytoscape.js
   readyEmitter = new EventEmitter<boolean>();
+
+  // for interval destory
+  private onDestory$ = new Subject<void>();
+
   //readyEmitter = new EventEmitter<boolean>();
   tippyHandlers:any[] = [];
 
@@ -88,8 +92,8 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   tappedTarget:any;
   tappedCount:number = 0;
 
-  heading = 'History Monitor';
-  subheading = 'This is an real-time monitor dashboard for Agenspop.';
+  heading = 'Realtime Monitor';
+  subheading = 'This is an real-time monitor for capturing real-time events of query.';
   icon = 'pe-7s-plane icon-gradient bg-tempting-azure';
 
   @ViewChild("cy", {read: ElementRef, static: false}) divCy: ElementRef;
@@ -105,7 +109,6 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   ngOnInit(){
     let qid:Observable<string> = this.route.queryParamMap.pipe(map(params => params.get('qid')));
     qid.subscribe(q=>{
-      console.log('qid:', q);
       if( !q ){   // is null
         this.router.navigate(['']);
         return;
@@ -117,12 +120,9 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {
     // **NOTE: 데이터가 없는 경우가 많다.
     //   => 없어도 그래프와 차트는 기본으로 생성해야 함
-
     this.initGraph(this.g);     // 현재 시점에서는 빈 그래프
 
-
     this.amApiService.findQueryWithDateRange(this.qid).subscribe(r=>{
-      // console.log('query:', r);
       if( !!r ){
         this.query = r;
         if( this.query.script ){
@@ -145,14 +145,15 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     // if ready graph data, then create canvas by cytoscape
     this.readyEmitter.subscribe(r=>{
       if( r ){
-        console.log('ready!', this.g);
         this.loadGraphData(this.g);
       }
     });
 
     // Event : time scroll move
     this.scrollEmitter.subscribe(r=>{
-      console.log("dragstop:", r.target, DATE_UTILS.toYYYYMMDD(new Date(r.value)));
+      // for DEBUG
+      if( localStorage.getItem('debug')=='true' ) console.log("dragstop:", r.target, DATE_UTILS.toYYYYMMDD(new Date(r.value)));
+
       if( r.target == 'start' ) this.start_dt = new Date(r.value);
       else this.end_dt = new Date(r.value);
       // change visibility of cy elements by date terms
@@ -161,14 +162,27 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
   }
 
   ngOnDestroy() {
+    // stop interval
+    this.onDestory$.next();
+    // destroy chart
     this.doDestoryChart();
+
+    // https://atomiks.github.io/tippyjs/methods/#destroy
+    if( this.cy ){
+      this.cy.nodes().forEach(e=>{
+        if( e.scratch('_tippy') ) e.scratch('_tippy').destroy();
+      });
+      if( !this.cy.destroyed() ) this.cy.destroy();
+    }
+
+    this.cy = window['cy'] = undefined;
+    this.g = _.cloneDeep(EMPTY_GRAPH);
   }
 
   doInitChart(qid: number, fromDate:string, fromTime:string){
     let rows$ = this.amApiService.findRowsByQid(qid, fromDate, fromTime);
     rows$.pipe(map(q=><IRow[]>q)).subscribe(rows => {
       this.rows = _.sortBy(rows, ['edate','etime']);
-      // console.log('rows =>', this.rows);
       this.chartData = this.makeChartData(this.rows);
       this.start_dt = this.chartData['startDate'];
       this.end_dt = this.chartData['endDate'];
@@ -176,8 +190,6 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
       this.zone.runOutsideAngular(() =>{
         // create chart
         this.chart = this.initChart(this.chartData);
-        // console.log(`timer(${0} x ${INTERVAL_SECONDS}s) => ${DATE_UTILS.toHHMMDD(this.end_dt)}, start..`);
-
         // interval start
         this.timerFetchNewData();
       });
@@ -225,7 +237,10 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
   timerFetchNewData(){
     // interval start
-    interval(INTERVAL_SECONDS * 1000).pipe(timeInterval()).subscribe(r=>{
+    interval(INTERVAL_SECONDS * 1000).pipe(
+      takeUntil(this.onDestory$),     // <-- activate on destory
+      timeInterval()                  // with timeValue
+    ).subscribe(r=>{
       this.end_dt = DATE_UTILS.afterSeconds(this.end_dt, INTERVAL_SECONDS);
       this.appendChartData(r.value+1, this.end_dt);
     });
@@ -243,12 +258,12 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
         let evtTimestamp = new Date(t.edate+'T'+t.etime).getTime();
         return evtTimestamp > from_dt.getTime();
       });
-      console.log(`[${fromTime}]`, sorted, filtered);
+      // for DEBUG
+      if( localStorage.getItem('debug')=='true' ) console.log(`[${fromTime}]`, sorted, filtered);
 
       // if result is empty, break out
       if( filtered.length == 0 ){
         let emptyRow = { date: this.end_dt, value: 0 };
-        // console.log(`timer(${idx} x ${INTERVAL_SECONDS}s) => ${ DATE_UTILS.toHHMMDD(this.end_dt)}, ${emptyRow.value}`);
         // append new data to chartData ==> auto-refresh chart
         this.chartData.data.push(emptyRow);               // append empty row
         this.chart.data = [...this.chartData.data];       // anyway do refresh
@@ -257,7 +272,6 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
       filtered.forEach(t=>{
         let newRow = { date: new Date(t.edate+'T'+t.etime), value: t.ids_cnt };
-        console.log(`timer(${idx} x ${INTERVAL_SECONDS}s) => ${ DATE_UTILS.toHHMMDD(newRow.date)}, ${newRow.value}`);
         // append new data to chartData ==> auto-refresh chart
         this.chartData.data.push(newRow);
         this.chart.data = [...this.chartData.data];
@@ -267,7 +281,9 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
       let targets$ = this.amApiService.findIdsByTimeRange(ids, fromDate, fromTime);
 
       targets$.subscribe(r=>{
-        console.log('new elements =>', r);
+        // for DEBUG
+        if( localStorage.getItem('debug')=='true' ) console.log('new elements =>', r);
+
         let newEles = r.filter(x=>this.cy.getElementById(x.data.id).size()==0);
 
         newEles.forEach(e=>{ e.scratch['_etype']='target'; });
@@ -338,7 +354,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     }
     chartData['endDate'] = currTime;                      // save last day
 
-    console.log('chartData:', chartData);
+    // console.log('chartData:', chartData);
     return chartData;
   }
 
@@ -436,7 +452,7 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     eles$.subscribe(r=>{
         this.g.datasource = datasource;
 
-        console.log(`** gremlin [${qid},${from_date},${from_time}] =>`, r);
+        // console.log(`** gremlin [${qid},${from_date},${from_time}] =>`, r);
         let nodes = r.filter(e=>e.group == 'nodes').map(e=>{ e.scratch['_etype']='target'; return e; });
         let edges = r.filter(e=>e.group == 'edges').map(e=>{ e.scratch['_etype']='target'; return e; });
 
@@ -560,7 +576,9 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
     let visible_eles = visible_nodes.union(connected_edges);
     let invisible_eles = cy.elements().difference(visible_eles);    // rest elements
-    // console.log('showGraphByDateTerms:', visible_eles, invisible_eles);
+
+    // for DEBUG
+    if( localStorage.getItem('debug')=='true' ) console.log('showGraphByDateTerms:', visible_eles, invisible_eles);
 
     visible_eles.style('display','element');
     invisible_eles.style('display','none');
@@ -576,8 +594,6 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
 
     // STEP4) set colors with own label
     this.setColors(g.labels);
-    // for DEBUG
-    window['agens'] = this.g;
 
     let pan = g.hasOwnProperty('pan') ? g['pan'] : { x:0, y:0 };
     let config:any = Object.assign( _.cloneDeep(CY_CONFIG), {
@@ -620,7 +636,6 @@ export class MonitorRealtimeComponent implements OnInit, AfterViewInit {
     });
 
     setTimeout(()=>{
-      console.log('loadGraphData: layout doing!');
       this.cy.elements().layout({
         name: 'euler', randomize: true,	animate: false, fit: true, padding: 50
       }).run();

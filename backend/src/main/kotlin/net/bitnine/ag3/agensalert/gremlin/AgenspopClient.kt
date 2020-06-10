@@ -9,15 +9,19 @@ import java.time.Duration
 // reactor-extra since 3.1.1
 import reactor.kotlin.extra.retry.retryExponentialBackoff
 
+
 @Component
 class AgenspopClient(private val webClient: WebClient){
+
+    val retryCount:Long = 3;
+    val delayTime:Long = 500L;
 
     fun findDatasources() =
             webClient.get()
                     .uri("/admin/graphs")
                     .retrieve()
                     .bodyToMono(Map::class.java)
-                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+                    .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
 
     fun findConnectedEdges(datasource:String, ids:List<String>) =
             webClient.post()
@@ -25,7 +29,7 @@ class AgenspopClient(private val webClient: WebClient){
                     .body(Mono.just(mapOf("q" to ids)), Map::class.java)
                     .retrieve()
                     .bodyToFlux(Map::class.java)
-                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+                    .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
 
     fun findConnectedVertices(datasource:String, ids:List<String>) =
             webClient.post()
@@ -33,14 +37,14 @@ class AgenspopClient(private val webClient: WebClient){
                     .body(Mono.just(mapOf("q" to ids)), Map::class.java)
                     .retrieve()
                     .bodyToFlux(Map::class.java)
-                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+                    .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
 
     fun findNeighborsOfOne(datasource:String, vid:String) =
             webClient.get()
                     .uri("/search/"+datasource+"/v/neighbors?q="+vid)
                     .retrieve()
                     .bodyToMono(Map::class.java)
-                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+                    .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
 
     fun findNeighborsOfGrp(datasource:String, ids:List<String>) =
             webClient.post()
@@ -48,7 +52,7 @@ class AgenspopClient(private val webClient: WebClient){
                     .body(Mono.just(mapOf("q" to ids)), Map::class.java)
                     .retrieve()
                     .bodyToFlux(Map::class.java)
-                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+                    .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
 
     fun findVertices(datasource:String, ids:List<String>) =
             webClient.post()
@@ -56,7 +60,7 @@ class AgenspopClient(private val webClient: WebClient){
                     .body(Mono.just(mapOf("q" to ids)), Map::class.java)
                     .retrieve()
                     .bodyToFlux(Map::class.java)
-                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+                    .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
 
     fun findEdges(datasource:String, ids:List<String>) =
             webClient.post()
@@ -64,7 +68,7 @@ class AgenspopClient(private val webClient: WebClient){
                     .body(Mono.just(mapOf("q" to ids)), Map::class.java)
                     .retrieve()
                     .bodyToFlux(Map::class.java)
-                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+                    .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
 
     fun execGremlin(datasource:String, script:String) =
             webClient.post()
@@ -72,7 +76,7 @@ class AgenspopClient(private val webClient: WebClient){
                     .body(Mono.just(mapOf("datasource" to datasource, "q" to script)), Map::class.java)
                     .retrieve()
                     .bodyToFlux(Map::class.java)
-                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+                    .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
 
     fun execGremlinWithRange(datasource:String, script:String, fromDate:String, toDate:String?=null) =
             webClient.post()
@@ -83,7 +87,7 @@ class AgenspopClient(private val webClient: WebClient){
                             )), Map::class.java)
                     .retrieve()
                     .bodyToFlux(Map::class.java)
-                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+                    .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
 
     fun findVerticesWithDateRange(ids:List<String>, fromDate: String, toDate: String?): Flux<Map<*, *>> {
         val params = mutableMapOf<String, Any?>("q" to ids, "from" to fromDate)
@@ -93,7 +97,7 @@ class AgenspopClient(private val webClient: WebClient){
                 .body(Mono.just(params), Map::class.java)
                 .retrieve()
                 .bodyToFlux(Map::class.java)
-                .retryExponentialBackoff(3, Duration.ofMillis(200))
+                .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
     }
 
     fun findEdgesWithDateRange(ids:List<String>, fromDate: String, toDate: String?): Flux<Map<*, *>> {
@@ -104,7 +108,7 @@ class AgenspopClient(private val webClient: WebClient){
                 .body(Mono.just(params), Map::class.java)
                 .retrieve()
                 .bodyToFlux(Map::class.java)
-                .retryExponentialBackoff(3, Duration.ofMillis(200))
+                .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
     }
 
     fun findElementsWithDateRange(ids:List<String>, fromDate: String, toDate: String?) =
@@ -119,6 +123,6 @@ class AgenspopClient(private val webClient: WebClient){
                     .uri("/admin/remove/"+datasource)
                     .retrieve()
                     .bodyToMono(Map::class.java)
-                    .retryExponentialBackoff(3, Duration.ofMillis(200))
+                    .retryExponentialBackoff(retryCount, Duration.ofMillis(delayTime))
 
 }

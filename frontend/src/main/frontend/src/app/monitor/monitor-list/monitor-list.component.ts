@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, NgZone } from '@angular/core';
 import { FormGroup, FormBuilder } from '@angular/forms';
-import { Observable, of, Subject, timer, forkJoin } from 'rxjs';
-import { catchError, map, tap, debounceTime  } from 'rxjs/operators';
+// import { Observable, of, Subject, timer, forkJoin } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import {NgbModal, ModalDismissReasons} from '@ng-bootstrap/ng-bootstrap';
 
@@ -76,7 +76,6 @@ export class MonitorListComponent implements AfterViewInit {
   doInitChart(){
     let queries$ = this.amApiService.findQueries();
     queries$.pipe(map(q=><IQuery[]>q)).subscribe(rows => {
-      // console.log('queries =>', rows);
       this.queries = rows;
     });
 
@@ -88,7 +87,6 @@ export class MonitorListComponent implements AfterViewInit {
     let aggregations$ = this.amApiService.findAggregations();
     aggregations$.pipe(map(q=><IAggregation[]>q)).subscribe(rows => {
       this.aggregations = _.sortBy(rows, ['edate','qid']);
-      // console.log('aggregations =>', this.aggregations);
       this.chartData = this.makeChartData(this.aggregations);
 
       this.zone.runOutsideAngular(() =>{
@@ -154,11 +152,12 @@ total : sum of all ids_cnt
       }
       chartData['data'].push(row);
     }
-    console.log('chartData:', chartData);
+
+    // console.log('chartData:', chartData);
     return chartData;
   }
 
-  initChart(chartData: any):am4charts.XYChart {
+initChart(chartData: any):am4charts.XYChart {
     let chart = am4core.create("chartdiv", am4charts.XYChart);
     chart.paddingRight = 40;
 
@@ -209,19 +208,21 @@ total : sum of all ids_cnt
     //valueAxis.renderer.maxLabelPosition = 0.95;
     valueAxis.renderer.fontSize = "0.8em"
 
-    for( let qid of chartData['qids'] ){
-      let series = chart.series.push(new am4charts.LineSeries());
-      series.dataFields.dateX = "date";
-      series.dataFields.valueY = qid+'';
-      series.dataFields.valueYShow = 'value';   // "changePercent";
-      series.tooltipText = "{name}: {valueY.value}";  //changePercent.formatNumber('[#0c0]+#.00|[#c00]#.##|0')}%";
-      let qry = _.find(this.queries, q=>q.id == qid);
-      series.name = (qry != undefined) ? qry.name : '[qid] '+qid;
-      series.tooltip.getFillFromObject = false;
-      series.tooltip.getStrokeFromObject = true;
-      series.tooltip.background.fill = am4core.color("#fff");
-      series.tooltip.background.strokeWidth = 2;
-      series.tooltip.label.fill = series.stroke;
+    if( chartData['qids'] ){
+      for( let qid of chartData['qids'] ){
+        let series = chart.series.push(new am4charts.LineSeries());
+        series.dataFields.dateX = "date";
+        series.dataFields.valueY = qid+'';
+        series.dataFields.valueYShow = 'value';   // "changePercent";
+        series.tooltipText = "{name}: {valueY.value}";  //changePercent.formatNumber('[#0c0]+#.00|[#c00]#.##|0')}%";
+        let qry = _.find(this.queries, q=>q.id == qid);
+        series.name = (qry != undefined) ? qry.name : '[qid] '+qid;
+        series.tooltip.getFillFromObject = false;
+        series.tooltip.getStrokeFromObject = true;
+        series.tooltip.background.fill = am4core.color("#fff");
+        series.tooltip.background.strokeWidth = 2;
+        series.tooltip.label.fill = series.stroke;
+      }
     }
 
     // -----------------------------------
@@ -269,7 +270,6 @@ total : sum of all ids_cnt
     // sbSeries.dataFields.valueYShow = undefined;
     // chart.scrollbarX = scrollbarX;
 
-    console.log('chart:', chart);
     return chart;
   }
 
@@ -292,7 +292,7 @@ total : sum of all ids_cnt
   changeStateQuery(item:IQuery){
     let state = !item.active_yn;
     this.amApiService.changeStateQuery(item.id, state).subscribe(r=>{
-      console.log(`changeStatus[active]: ${item.active_yn} to ${state} => ${r}`);
+      console.log(`changeStatus: ${item.active_yn} to ${state} => ${r}`);
       if( Number.parseInt(r) > 0 ){
         item.active_yn = state;
         item.up_date = new Date();
@@ -323,8 +323,6 @@ total : sum of all ids_cnt
 
     this.modalService.open($modal).result.then((result) => {
       let formData = this.editQueryForm.getRawValue();
-      // this.closeResult = `Closed with: ${result}`;
-      // console.log(this.closeResult, formData);
       if( item ){   // update query
         this.amApiService.updateQuery(<IQuery>formData)
           .subscribe(r=>{

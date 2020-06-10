@@ -54,9 +54,6 @@ class H2SheduleService(
     @PostConstruct
     private fun init(){
         cronInterval = monitorProperties.cronInterval()
-
-        // do activate after check storage
-        checkStorage()
     }
 
     fun setActivate(state:Boolean){ canScheduled = state }
@@ -88,11 +85,10 @@ class H2SheduleService(
 
     // **NOTE: coroutine 에 의해 실행되므로 suspend 붙으면 안됨
     fun batchRealtime(fromTime:LocalDateTime):Unit {
-        println("\nretrieval every ${cronInterval} seconds... from '${dtFormatter.format(fromTime)}'")
         // for DEBUG
         // val fromTime = LocalDateTime.of(2019, 8, 22, 10, 10, 10)
 
-        qryRepository.findAllNotDeleted().subscribe {
+        qryRepository.findAllNotDeleted().subscribe({
             val query = it
             client.execGremlinWithRange(it.datasource, it.script, dtFormatter.format(fromTime), null)
                 .filter{ e-> !e.isNullOrEmpty() && e.containsKey("group") && e.containsKey("data") && e.containsKey("scratch") }
@@ -116,7 +112,11 @@ class H2SheduleService(
                         println(" ==> fail, err=${it}")
                     })
                 }
-        }
+        },{
+            println("\nERROR on qryRepository.findAllNotDeleted() at '${dtFormatter.format(fromTime)}'")
+        },{
+            println("\nretrieval every ${cronInterval} seconds... from '${dtFormatter.format(fromTime)}'")
+        })
     }
 
     // **NOTE: coroutine 에 의해 실행되므로 suspend 붙으면 안됨
@@ -222,83 +222,9 @@ order by edate, qid
 
         println("\nthen, start scheduledTasks.\n")
         this.canScheduled = true
-
-/*
-        qryRepository.findAllNotDeleted().subscribe({
-            val query = it
-            client.execGremlin(it.datasource, it.script, dtFormatter.format(fromTime), null)
-                .filter { e -> !e.isNullOrEmpty() && e.containsKey("group") && e.containsKey("data") && e.containsKey("scratch") }
-                .map { e ->
-                    mapOf<String, String>(
-                            "group" to e.get("group").toString(),
-                            "id" to (e.get("data") as Map<String, Any>).get("id").toString(),
-                            "label" to (e.get("data") as Map<String, Any>).get("label").toString(),
-                            "timestamp" to (e.get("scratch") as Map<String, Any>).get("_\$\$timestamp").toString(),
-                    )
-                }
-                .collectList()
-                .subscribe {
-                    if (it.isEmpty()) return@subscribe;
-
-                    it.sortBy { it.get("timestamp") }
-                    val grpByEdate = it.map {
-                        val evt = it.toMutableMap()
-                        val edate = it.get("timestamp")!!.split(" ")[0]
-                        evt.set("edate", edate)
-                        return@map evt
-                    }
-                            .groupBy { it.get("edate") }
-                    val keys = grpByEdate.keys.sortedBy { it }
-
-                    for (edate in keys) {
-                        val row = AgenspopUtil.makeRowFromResults(fromTime, query, grpByEdate.get(edate) as List<Map<String, Any>>)
-                        rowRepository.save(row).subscribe({
-                            print("- qid=${row.qid}: <${query.datasource}>, types=[${row.type}], labels=[${row.labels}], ids_cnt=${row.ids_cnt}")
-                            println(" ==> OK, id=${it.id}")
-                        },
-                        {
-                            print("- qid=${row.qid}: <${query.datasource}>, types=[${row.type}], labels=[${row.labels}], ids_cnt=${row.ids_cnt}")
-                            println(" ==> fail, err=${it}")
-                        })
-                    }
-                }
-        },{
-            println("onError")
-        },{
-            println("Completed!")
-        })
- */
-
     }
 
     ////////////////////////////////////////////////////////
-
-    fun checkStorage():Unit {
-        var isChecked = false
-
-        println("\ncheck agenspop client and embedded storage before scheduleTasks start..")
-        while( isChecked.not() ){
-            Thread.sleep(1500L)     // initial delay
-            if( isChecked ) break
-
-            client.findDatasources().subscribe({
-                println("  1) check agenspop client.. OK (${it.keys})")
-
-                db.execute("""select count(*) as cnt from event_row""")
-                        .fetch().first().subscribe({
-                            println("  2) check event_row table.. OK (size=${it.get(it.keys.first())})\n")
-
-                            // activate schedule tasks
-                            this.canScheduled = true
-                            isChecked = true
-                        },{
-                            println("  2) check event_ro table.. fail (msg=${it})\n")
-                        })
-            },{
-                println("  1) check agenspop client.. fail (msg=${it})\n")
-            })
-        }
-    }
 
     suspend fun realtimeReset(datasource:String) = runBlocking<Unit> {
 

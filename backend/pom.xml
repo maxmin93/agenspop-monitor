@@ -156,7 +156,7 @@
         <finalName>${final.jar.name}-${project.parent.version}</finalName>
         <plugins>
 
-            <!-- **NOTE: 예전에는 필요가 없던 부분인데, index.html 연결이 안되어 강제로 static 복사 -->
+            <!-- **NOTE: 예전에는 필요 없던 부분인데, frontend 의 index.html 연결이 안되어 강제로 static 복사 -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
@@ -219,6 +219,29 @@
                     </dependency>
                 </dependencies>
             </plugin>
+
+            <!-- copy config/alert-config.yml to target-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-config</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target name="copy config.yml to target directory">
+                                <copy todir="${basedir}/target">
+                                    <fileset dir="${basedir}/config" includes="**/*" />
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 

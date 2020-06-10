@@ -1,7 +1,7 @@
 import { Component, ViewChild, ElementRef, NgZone, OnInit, AfterViewInit, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, fromEvent } from 'rxjs';
-import { map, filter, debounceTime } from 'rxjs/operators';
+import { map, debounceTime } from 'rxjs/operators';
 
 import { AmApiService } from '../../services/am-api.service';
 import { IAggregation, IQuery } from '../../services/agens-event-types';
@@ -65,7 +65,7 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
 
   private chart: am4charts.XYChart;
 
-  private g:IGraph = EMPTY_GRAPH;
+  private g:IGraph = _.cloneDeep(EMPTY_GRAPH);
   cy: any = undefined;                  // cytoscape.js
   readyEmitter = new EventEmitter<boolean>();
   tippyHandlers:any[] = [];
@@ -79,7 +79,7 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
   tappedCount:number = 0;
 
   heading = 'History Monitor';
-  subheading = 'This is an real-time monitor dashboard for Agenspop.';
+  subheading = 'This is an history monitor for aggregating daily events of query.';
   icon = 'pe-7s-plane icon-gradient bg-tempting-azure';
 
   @ViewChild("cy", {read: ElementRef, static: false}) divCy: ElementRef;
@@ -95,7 +95,6 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
   ngOnInit(){
     let qid:Observable<string> = this.route.queryParamMap.pipe(map(params => params.get('qid')));
     qid.subscribe(q=>{
-      console.log('qid:', q);
       if( !q ){   // is null
         this.router.navigate(['']);
         return;
@@ -103,7 +102,6 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
       this.qid = Number.parseInt(q);
 
       this.amApiService.findQueryWithDateRange(this.qid).subscribe(r=>{
-        console.log('query:', r);
         if( !!r ){
           this.query = r;
           if( this.query.script ){
@@ -118,19 +116,20 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.doInitChart();
+    this.doInitChart(this.qid);
     // this.initGraph(this.g);     // empty graph
 
     // graph data ready
     this.readyEmitter.subscribe(r=>{
-      console.log('readyEmitter:', r);
       if( r ){
         this.initGraph(this.g);     // empty graph
         // this.loadGraphData(this.g);
       }
     });
     this.scrollEmitter.subscribe(r=>{
-      console.log("dragstop:", r.target, DATE_UTILS.toYYYYMMDD(new Date(r.value)));
+      // for DEBUG
+      if( localStorage.getItem('debug')=='true' ) console.log("dragstop:", r.target, DATE_UTILS.toYYYYMMDD(new Date(r.value)));
+
       if( r.target == 'start' ) this.start_dt = new Date(r.value);
       else this.end_dt = new Date(r.value);
       // change visibility of cy elements by date terms
@@ -140,10 +139,23 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
 
   ngOnDestroy() {
     this.doDestoryChart();
+
+    // https://atomiks.github.io/tippyjs/methods/#destroy
+    if( this.cy ){
+      this.cy.nodes().forEach(e=>{
+        if( e.scratch('_tippy') ) e.scratch('_tippy').destroy();
+      });
+      if( !this.cy.destroyed() ) this.cy.destroy();
+    }
+
+    this.cy = window['cy'] = undefined;
+    this.g = _.cloneDeep(EMPTY_GRAPH);
   }
 
-  doInitChart(){
-    let aggregations$ = this.amApiService.findAggregationsByQid(this.qid);
+  doInitChart(qid:number){
+    if( qid == null ) return;
+    let aggregations$ = this.amApiService.findAggregationsByQid(qid);
+
     aggregations$.pipe(map(q=><IAggregation[]>q)).subscribe(rows => {
       this.aggregations = _.sortBy(rows, ['edate']);
       // console.log('aggregations =>', this.aggregations);
@@ -166,7 +178,7 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
   doRefresh($event){
     if( $event ){
       this.doDestoryChart();
-      this.doInitChart();
+      this.doInitChart(this.qid);
     }
   }
 
@@ -207,7 +219,7 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     }
     chartData['endDate'] = curr;                        // save last day
 
-    console.log('chartData:', chartData);
+    // console.log('chartData:', chartData);
     return chartData;
   }
 
@@ -291,7 +303,7 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
     eles$.subscribe(r=>{
         this.g.datasource = datasource;
 
-        console.log("** gremlin =>", r);
+        // console.log("** gremlin =>", r);
         let nodes = r.filter(e=>e.group == 'nodes').map(e=>{ e.scratch['_etype']='target'; return e; });
         let edges = r.filter(e=>e.group == 'edges').map(e=>{ e.scratch['_etype']='target'; return e; });
 
@@ -415,7 +427,9 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
 
     let visible_eles = visible_nodes.union(connected_edges);
     let invisible_eles = cy.elements().difference(visible_eles);    // rest elements
-    console.log(`showGraph[ ${DATE_UTILS.toYYYYMMDD(start_dt)} ~ ${DATE_UTILS.toYYYYMMDD(end_dt)} ]:`, visible_eles.map(e=>e.id()), invisible_eles.map(e=>e.id()));
+
+    // for DEBUG
+    if( localStorage.getItem('debug')=='true' ) console.log(`showGraph[ ${DATE_UTILS.toYYYYMMDD(start_dt)} ~ ${DATE_UTILS.toYYYYMMDD(end_dt)} ]:`, visible_eles.map(e=>e.id()), invisible_eles.map(e=>e.id()));
 
     // **NOTE: hidden 에서 visible 로 잘 바뀌지 않는다. (nodes 가 target인 경우만 그런듯)
     //         edge 한두개가 보이지 않는데, 클릭해 보면 나온다. 당장은 해결책이 없음 (-_-;)
@@ -442,8 +456,6 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
 
     // STEP4) set colors with own label
     this.setColors(g.labels);
-    // for DEBUG
-    window['agens'] = this.g;
 
     let pan = g.hasOwnProperty('pan') ? g['pan'] : { x:0, y:0 };
     let config:any = Object.assign( _.cloneDeep(CY_CONFIG), {
@@ -463,16 +475,13 @@ export class MonitorViewComponent implements OnInit, AfterViewInit {
   }
 
   loadGraphData(g:IGraph){
-    console.log('loadGraphData:', g);
     this.cy.batch(()=>{
       if( this.g.nodes.length > 0 ){
         this.cy.add( this.g.nodes );
-
       }
       if( this.g.edges.length > 0 ){
         this.cy.add( this.g.edges );
       }
-
       // ready
       this.cy.scratch('_datasource', g.datasource);
       this.cy.nodes().forEach(e => this.setStyleNode(e));

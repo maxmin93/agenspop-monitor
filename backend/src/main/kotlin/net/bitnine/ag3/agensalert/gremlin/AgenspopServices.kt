@@ -1,20 +1,21 @@
 package net.bitnine.ag3.agensalert.gremlin
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
+import javax.annotation.PostConstruct
 
 
 @Service
-class AgenspopService(private val client: AgenspopClient){
+class AgenspopService(
+        @Autowired private val client: AgenspopClient
+){
+    // @PostConstruct 안됨
+    // ==> IllegalStateException: Lifecycle method annotation requires a no-arg method
 
     suspend fun findDatasources() =
             client.findDatasources().awaitFirstOrNull()

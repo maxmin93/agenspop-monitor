@@ -15,10 +15,17 @@ data class MonitorProperties(
         val baseUri: String,
         val h2ConsolePort: String = "8182"
 ){
-
     fun cronInterval() = cronRealtime.substring(
             cronRealtime.indexOf('/')+1,
             cronRealtime.indexOf('*',cronRealtime.indexOf('/')+2)
         ).trimEnd().toLong()
-
 }
+
+@ConstructorBinding
+@ConfigurationProperties(prefix = "agens.product")
+data class ProductProperties(
+        val name: String = "alert",
+        val version: String = "0.7.3-dev",
+        val helloMsg: String = "Hello, agens-alert",
+        val debug: Boolean = false
+)

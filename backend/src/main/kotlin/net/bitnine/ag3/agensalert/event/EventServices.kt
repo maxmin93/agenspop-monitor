@@ -7,6 +7,7 @@ import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import net.bitnine.ag3.agensalert.gremlin.AgenspopClient
 import net.bitnine.ag3.agensalert.gremlin.AgenspopUtil
+import org.springframework.beans.factory.annotation.Autowired
 
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.awaitFirstOrNull
@@ -15,13 +16,17 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+import javax.annotation.PostConstruct
 
 
 @Service
 class EventQryService(
-        private val repo: EventQryRepository,
-        private val db: DatabaseClient
+        @Autowired private val repo: EventQryRepository,
+        @Autowired private val db: DatabaseClient
 ) {
+    // @PostConstruct 안됨
+    // ==> IllegalStateException: Lifecycle method annotation requires a no-arg method
+
     suspend fun findAll() = repo.findAll().asFlow()
     suspend fun findAllNotDeleted() = repo.findAllNotDeleted().asFlow()
 
@@ -70,10 +75,12 @@ class EventQryService(
 
 @Service
 class EventRowService(
-        private val repo: EventRowRepository,
-        private val db: DatabaseClient,
-        private val client: AgenspopClient
+        @Autowired private val repo: EventRowRepository,
+        @Autowired private val db: DatabaseClient,
+        @Autowired private val client: AgenspopClient
 ) {
+    // @PostConstruct 안됨
+    // ==> IllegalStateException: Lifecycle method annotation requires a no-arg method
 
     suspend fun findAll(): Flow<EventRow> {
         val stream = repo.findAll()
@@ -163,9 +170,12 @@ class EventRowService(
 
 @Service
 class EventAggService(
-        private val repo: EventAggRepository,
-        private val db: DatabaseClient
+        @Autowired private val repo: EventAggRepository,
+        @Autowired private val db: DatabaseClient
 ){
+    // @PostConstruct 안됨
+    // ==> IllegalStateException: Lifecycle method annotation requires a no-arg method
+
     suspend fun findAll() = repo.findAll().asFlow()
     suspend fun findById(id: Long) = repo.findById(id).awaitFirstOrNull()
 

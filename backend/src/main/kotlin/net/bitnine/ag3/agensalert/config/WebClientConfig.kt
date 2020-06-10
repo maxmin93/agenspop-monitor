@@ -7,7 +7,9 @@ import org.springframework.web.reactive.function.client.WebClient
 
 
 @Configuration
-class WebClientConfiguration(private val properties: MonitorProperties) {
+class WebClientConfiguration(
+        private val properties: MonitorProperties
+){
 
     @Bean
     @Primary

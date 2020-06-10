@@ -2,6 +2,7 @@ package net.bitnine.ag3.agensalert.storage
 
 import io.netty.util.Timeout
 import io.netty.util.TimerTask
+import net.bitnine.ag3.agensalert.config.ProductProperties
 import net.bitnine.ag3.agensalert.event.ErrorMessage
 import net.bitnine.ag3.agensalert.gremlin.AgenspopUtil
 import org.slf4j.LoggerFactory
@@ -16,7 +17,10 @@ import java.time.LocalDate
 
 
 @Component
-class H2AdminHandler(@Autowired val service: H2SheduleService) {
+class H2AdminHandler(
+         val service: H2SheduleService,
+         val properties: ProductProperties
+) {
     private val logger = LoggerFactory.getLogger(H2AdminHandler::class.java)
 
     suspend fun hello(request: ServerRequest): ServerResponse {
@@ -25,7 +29,13 @@ class H2AdminHandler(@Autowired val service: H2SheduleService) {
                 .bodyValueAndAwait( mapOf("msg" to "Hello, H2AdminHandler!") )
     }
 
-/*
+    suspend fun productInfo(request: ServerRequest): ServerResponse {
+        return ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValueAndAwait( properties )
+    }
+
+    /*
 http://localhost:8082/admin/activate?q=false
  */
     suspend fun changeState(request: ServerRequest): ServerResponse {

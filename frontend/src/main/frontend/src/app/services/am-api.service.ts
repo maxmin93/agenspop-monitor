@@ -1,13 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { from, throwError, of } from 'rxjs';
-import { map, share, tap, catchError, retry, concatAll, timeout } from 'rxjs/operators';
+import { throwError } from 'rxjs';
+import { catchError, retry } from 'rxjs/operators';
 import * as _ from 'lodash';
+
 import { IQuery } from './agens-event-types';
 import { IElement } from './agens-graph-types';
-import { array } from '@amcharts/amcharts4/core';
 
-const TIMEOUT_LIMIT:number = 9999;
 
 @Injectable({
   providedIn: 'root'
@@ -35,10 +34,23 @@ export class AmApiService {
       'Something bad happened; please try again later.');
   };
 
+  // product info
+  public findProductInfo() {
+    let uri = this.apiUrl+'/admin/product/info';
+
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
+    return this._http.get<any>( uri, { headers : headers })
+      .pipe(
+        retry(3), // retry a failed request up to 3 times
+        catchError(this.handleError) // then handle the error
+      );
+  }
+
   // queries
   // http://localhost:8082/agens/datasources
   public findDatasources() {
     let uri = this.apiUrl+'/agens/datasources';
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
       .pipe(
@@ -51,6 +63,7 @@ export class AmApiService {
   // http://localhost:8080/query
   public findQueries() {
     let uri = this.apiUrl+'/query';
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
       .pipe(
@@ -63,6 +76,7 @@ export class AmApiService {
   // http://localhost:8080/query
   public findQuery(qid:number) {
     let uri = this.apiUrl+'/query/'+qid;
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
       .pipe(
@@ -75,6 +89,7 @@ export class AmApiService {
   // http://localhost:8080/query
   public findQueryWithDateRange(qid:number) {
     let uri = this.apiUrl+'/query/'+qid+'/date-range';
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
       .pipe(
@@ -85,6 +100,7 @@ export class AmApiService {
 
   public findQueryWithTimeRange(qid:number) {
     let uri = this.apiUrl+'/query/'+qid+'/time-range';
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
       .pipe(
@@ -95,6 +111,7 @@ export class AmApiService {
 
   public addQuery(query:IQuery) {
     let uri = this.apiUrl+'/query';
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.post( uri, query, { headers : headers })
       .pipe(
@@ -104,6 +121,7 @@ export class AmApiService {
 
   public updateQuery(query:IQuery) {
     let uri = this.apiUrl+'/query/'+query.id;
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.put( uri, query, { headers : headers })
       .pipe(
@@ -113,6 +131,7 @@ export class AmApiService {
 
   public changeStateQuery(qid:number, state:boolean) {
     let uri = this.apiUrl+'/query/'+qid+'/change-state?state='+state;
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
       .pipe(
@@ -122,6 +141,7 @@ export class AmApiService {
 
   public deleteQuery(qid:number) {
     let uri = this.apiUrl+'/query/'+qid;
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.delete( uri, { headers : headers })
       .pipe(
@@ -133,6 +153,7 @@ export class AmApiService {
   // http://localhost:8080/aggs
   public findAggregations() {
     let uri = this.apiUrl+'/aggs';
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
       .pipe(
@@ -145,30 +166,33 @@ export class AmApiService {
   // http://localhost:8080/rows
   public findRowsByQid(qid:number, fromDate:string, fromTime:string) {
     let uri = this.apiUrl+'/rows/qid/'+qid+'?date='+fromDate+'&time='+fromTime;
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
-    .pipe(
-      retry(3), // retry a failed request up to 3 times
-      catchError(this.handleError) // then handle the error
-    );
+      .pipe(
+        retry(3), // retry a failed request up to 3 times
+        catchError(this.handleError) // then handle the error
+      );
   }
 
   // aggregations
   // http://localhost:8080/aggs
   public findAggregationsByQid(qid:number) {
     let uri = this.apiUrl+'/aggs/qid/'+qid;
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
-    .pipe(
-      retry(3), // retry a failed request up to 3 times
-      catchError(this.handleError) // then handle the error
-    );
+      .pipe(
+        retry(3), // retry a failed request up to 3 times
+        catchError(this.handleError) // then handle the error
+      );
   }
 
   public execGremlin(datasource:string, script:string){
     let uri = this.apiUrl+'/agens/gremlin';
-    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     let params = { datasource: datasource, q: script };
+
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.post<IElement[]>( uri, params, { headers : headers })
       .pipe(
         catchError(this.handleError)
@@ -177,8 +201,9 @@ export class AmApiService {
 
   public execGremlinWithRange(datasource:string, script:string, from:string, to?:string){
     let uri = this.apiUrl+'/agens/gremlin/range';
-    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     let params = { datasource: datasource, q: script, from: from, to: to };
+
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.post<IElement[]>( uri, params, { headers : headers })
       .pipe(
         catchError(this.handleError)
@@ -187,8 +212,9 @@ export class AmApiService {
 
   public findConnectedEdges(datasource:string, ids:string[]){
     let uri = this.apiUrl+'/agens/connected_edges';
-    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     let params = { datasource: datasource, q: ids.join(',') };
+
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.post<IElement[]>( uri, params, { headers : headers })
       .pipe(
         catchError(this.handleError)
@@ -197,8 +223,9 @@ export class AmApiService {
 
   public findConnectedVertices(datasource:string, ids:string[]){
     let uri = this.apiUrl+'/agens/connected_vertices';
-    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     let params = { datasource: datasource, q: ids.join(',') };
+
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.post<IElement[]>( uri, params, { headers : headers })
       .pipe(
         catchError(this.handleError)
@@ -207,8 +234,9 @@ export class AmApiService {
 
   public findNeighborVertices(datasource:string, ids:string[]){
     let uri = this.apiUrl+'/agens/neighbors';
-    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     let params = { datasource: datasource, q: ids.join(',') };
+
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.post<IElement[]>( uri, params, { headers : headers })
       .pipe(
         catchError(this.handleError)
@@ -217,31 +245,31 @@ export class AmApiService {
 
   public findEventsWithDateRange(qid:number, from_date:string, to_date:string){
     let uri = this.apiUrl+'/rows/search/date?qid='+qid+'&from='+from_date+'&to='+to_date;
-    console.log('findEventsWithDateRange:', uri);
 
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
-    .pipe(
-      retry(3), // retry a failed request up to 3 times
-      catchError(this.handleError) // then handle the error
-    );
+      .pipe(
+        retry(3), // retry a failed request up to 3 times
+        catchError(this.handleError) // then handle the error
+      );
   }
 
   public findEventsWithTimeRange(qid:number, from_date:string, from_time:string){
     let uri = this.apiUrl+'/rows/search/time?qid='+qid+'&date='+from_date+'&time='+from_time;
+
     let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.get<any>( uri, { headers : headers })
-    .pipe(
-      retry(3), // retry a failed request up to 3 times
-      catchError(this.handleError) // then handle the error
-    );
+      .pipe(
+        retry(3), // retry a failed request up to 3 times
+        catchError(this.handleError) // then handle the error
+      );
   }
 
   public findIdsByTimeRange(ids:string[], fromDate:string, fromTime:string){
     let uri = this.apiUrl+'/agens/ids/range';
-    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     let params = { q: ids, date: fromDate, time: fromTime };
-    console.log('findIdsByTimeRange', params);
+
+    let headers = new HttpHeaders({'Content-Type': 'application/json'});
     return this._http.post<IElement[]>( uri, params, { headers : headers })
       .pipe(
         catchError(this.handleError)

@@ -1,0 +1,27 @@
+# **NOTE : Netty config
+# https://www.baeldung.com/spring-boot-reactor-netty
+server:
+  port: 8082
+
+#spring.r2dbc.initialization-mode=always
+#spring.r2dbc.url=r2dbc:h2:mem://./eventdb?options=DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=true;
+
+## **BUG!!: r2dbc connection URL
+## https://github.com/r2dbc/r2dbc-h2/issues/150
+spring:
+  r2dbc:
+    url: r2dbc:h2:file://././eventdb
+    name: sa
+    password:
+
+agens:
+  monitor:
+    cron-daily: "0 5 1 * * ?"
+    cron-realtime: "*/30 * * * * ?"
+    base-uri: "http://tonyne.iptime.org:8080/api"
+    h2-console-port: 8182
+  product:
+    name: agenspop-alert
+    version: 0.7.3
+    hello-msg: agenspop-alert v1.0 (since 2020-06-09)
+    debug: true

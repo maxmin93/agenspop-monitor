@@ -1,5 +1,7 @@
 import * as _ from 'lodash';
 
+// use by _.cloneDeep for preventing previous graph data
+// ==> const 라고 해도, 멤버들의 불변까지 보장하지 않는다
 export const EMPTY_GRAPH:IGraph = {
   datasource: undefined,
   labels: { nodes: [], edges: [] },
