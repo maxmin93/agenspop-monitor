@@ -3,33 +3,73 @@
 Real-time monitor and visualization for Agenspop (AG3 utility)
 Someday, Alert function will be added on this project.
 
-### Base project
+## Parent project : mixed 
 
-[stat.spring.io](https://start.spring.io/#!type=gradle-project&language=kotlin&platformVersion=2.2.1.RELEASE&packaging=jar&jvmVersion=1.8&groupId=net.bitnine.ag3&artifactId=webflux-r2dbc-kotlin&name=webflux-r2dbc-kotlin&description=Demo%20project%20for%20Spring%20Boot&packageName=net.bitnine.ag3.webflux-r2dbc-kotlin&dependencies=webflux,data-r2dbc,h2,actuator)
- - gradle (kotlin)
- - kotlin
- - webflux
+Backend
+ - spring boot & webflux
+ - kotlin & co-routine
  - spring-data-r2dbc
- - h2
- - actuator
- 
-### Extra dependencies
+ - r2dbc-h2 (embedded db: file)
+ - webclient (connect to agenspop)
 
-````kotlin
-implementation("io.projectreactor.kotlin:reactor-kotlin-extensions:1.0.0.RELEASE")
-testImplementation("io.mockk:mockk:1.9")
+Frontend
+ - Angular 8 & bootstrap 4
+ - amcharts4 (date axis)
+ - cytoscape.js 3
+ - lodash-es 4
+ - UI Template: [ArchitectUI - Angular 7 Bootstrap 4](https://github.com/DashboardPack/architectui-angular-theme-free)
+
+ 
+## Build & Run
+
+Build
+````bash
+mvn clean install -DskipTests
 ````
 
-### Frontend UI Template
+<img height="460px" src="">
 
-[ArchitectUI - Angular 7 Bootstrap 4](https://github.com/DashboardPack/architectui-angular-theme-free)
+Run
+```bash
+cd backend/target
+java -jar agens-alert-0.7.jar --spring.config.name=alert-config
 
-### Extra remarks
-- Had to manual set the h2 version to a previous one as r2dbc-h2 can't handle (yet) the changes in 1.4.200
-- Unit tests and Integration tests are including (100% coverage :))
-- Upgraded to Gradle 6.0
+## or
 
-### Reference Documentation
+cd backend
+mvn spring-boot:run
+```
+
+<img height="460px" src="">
+
+## Backend APIs
+
+Query with Date range
+
+
+Query with Time range
+
+
+## Frontend Views
+
+Monitor Queries (List)
+
+<img height="460px" src="">
+
+
+Monitor View (about one query)
+
+<img height="460px" src="">
+
+
+Monitor Realtime (about one query)
+
+<img height="460px" src="">
+
+
+
+### Reference Documents
+
 For further reference, please consider the following sections:
 
 * [spring-boot-kotlin-coroutines](https://www.baeldung.com/spring-boot-kotlin-coroutines)
