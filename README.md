@@ -3,6 +3,7 @@
 Real-time monitor and visualization for Agenspop (AG3 utility)
 Someday, Alert function will be added on this project.
 
+
 ## Parent project : mixed 
 
 Backend
@@ -27,7 +28,7 @@ Build
 mvn clean install -DskipTests
 ````
 
-<img height="460px" src="">
+<img height="400px" src="https://github.com/maxmin93/agens-alert/blob/master/images/AgensAlert-compile_time.png">
 
 Run
 ```bash
@@ -40,32 +41,44 @@ cd backend
 mvn spring-boot:run
 ```
 
-<img height="460px" src="">
+<img height="400px" src="https://github.com/maxmin93/agens-alert/blob/master/images/AgensAlert-compile_front.png">
+
+
+## Event Tables Schema
+
+<img height="400px" src="https://github.com/maxmin93/agens-alert/blob/master/images/AgensAlert-tables_schema.png">
+
 
 ## Backend APIs
 
 Query with Date range
 
+<img height="400px" src="https://github.com/maxmin93/agens-alert/blob/master/images/AgensAlert-API_date.png">
 
 Query with Time range
+
+<img height="400px" src="https://github.com/maxmin93/agens-alert/blob/master/images/AgensAlert-API_time.png">
 
 
 ## Frontend Views
 
 Monitor Queries (List)
 
-<img height="460px" src="">
+<img height="400px" src="https://github.com/maxmin93/agens-alert/blob/master/images/AgensAlert-ui-List.png">
+
+<img height="400px" src="https://github.com/maxmin93/agens-alert/blob/master/images/AgensAlert-ui-List_query.png">
 
 
 Monitor View (about one query)
 
-<img height="460px" src="">
+<img height="400px" src="https://github.com/maxmin93/agens-alert/blob/master/images/AgensAlert-ui-View.png">
+
+<img height="400px" src="https://github.com/maxmin93/agens-alert/blob/master/images/AgensAlert-ui-View_scrolled.png">
 
 
 Monitor Realtime (about one query)
 
-<img height="460px" src="">
-
+<img height="460px" src="https://github.com/maxmin93/agens-alert/blob/master/images/AgensAlert-realtime-modern_person-bitnine.png">
 
 
 ### Reference Documents
