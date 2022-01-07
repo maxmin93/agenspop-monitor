@@ -26,7 +26,7 @@
         <reactor-ext.version>1.0.2.RELEASE</reactor-ext.version>
         <bom-r2dbc.version>0.1.0.M3</bom-r2dbc.version>
         <r2dbc-h2.version>0.8.3.RELEASE</r2dbc-h2.version>
-        <h2.version>1.4.200</h2.version>
+        <h2.version>2.0.206</h2.version>
     </properties>
 
     <repositories>
